@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Learning — Epoch.ai{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-header">Learning Path</h1>
+    <p class="text-secondary" style="margin-bottom: 24px;">
+        AI agents adapt your learning path in real-time. Choose a category to explore topics.
+    </p>
+
+    <div class="cat-cards-grid">
+        {% for group_name, group_data in categories.items() %}
+        <a href="/learning/{{ group_name }}" class="category-card reveal reveal-delay-{{ loop.index }}">
+            <h3 class="cat-title">{{ group_data.display_name }}</h3>
+            <p class="cat-subtopics">
+                {% for topic in group_data.topics[:3] %}{{ topic.display_name }}{% if not loop.last %} &middot; {% endif %}{% endfor %}{% if group_data.topics|length > 3 %} &hellip;{% endif %}
+            </p>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
+                <span class="badge" style="background:{{ group_data.color }}18;color:{{ group_data.color }};font-size:11px;">
+                    {{ group_data.mastered }}/{{ group_data.total }} completed
+                </span>
+                <span style="font-size:12px;color:var(--accent);font-weight:600;">Explore &rarr;</span>
+            </div>
+            <div class="cat-progress-bar" style="width:{{ group_data.pct }}%;background:{{ group_data.color }};"></div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

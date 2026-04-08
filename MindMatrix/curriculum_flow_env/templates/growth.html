@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% block title %}Growth Analysis — Epoch.ai{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-header">Growth Analysis</h1>
+    <p class="text-secondary" style="margin-bottom: 24px;">
+        Track your learning journey — courses completed, quiz performance, and mastery trends.
+    </p>
+
+    <!-- Motivational Quote Banner -->
+    <div class="growth-quote reveal" id="growth-quote">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;opacity:0.6;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <p id="growth-quote-text"></p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="stats-grid reveal">
+        <div class="stat-card">
+            <span class="stat-number gradient-text">{{ courses_completed }}</span>
+            <span class="stat-label">Courses Completed</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" style="color: var(--accent);">{{ total_quizzes }}</span>
+            <span class="stat-label">Quizzes Taken</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" style="color: var(--accent);">{{ quizzes_not_taken }}</span>
+            <span class="stat-label">Quizzes Not Taken</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" style="color: var(--accent);">{{ avg_score }}%</span>
+            <span class="stat-label">Average Score</span>
+        </div>
+    </div>
+
+    <!-- Chart Section with View Switcher + Category Filter -->
+    <div class="card reveal" style="margin-top: 24px;">
+        <div class="chart-header" style="flex-wrap:wrap;gap:10px;">
+            <h3>Learning Growth Over Time</h3>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <!-- Category Filter Pills -->
+                <div class="chart-filter-pills" id="chart-filter-pills">
+                    <button class="chart-filter-pill active" data-filter="all">All</button>
+                    {% for cat in category_filter_list %}
+                    <button class="chart-filter-pill" data-filter="{{ cat.slug }}">{{ cat.name }}</button>
+                    {% endfor %}
+                </div>
+                <div class="chart-tabs" id="chart-tabs">
+                    <button class="chart-tab active" data-chart="line">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        Line
+                    </button>
+                    <button class="chart-tab" data-chart="bar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        Bar
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="chart-canvas-wrap">
+            {% if growth_data %}
+            <canvas id="growthChart"></canvas>
+            <div id="growth-empty-state" class="chart-empty" style="display:none;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <p>No data available for this category</p>
+                <a href="/learning" class="btn-primary btn-sm" style="margin-top:12px;">Start Learning</a>
+            </div>
+            {% else %}
+            <div class="chart-empty">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.4"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <p>Take quizzes to see your growth graph</p>
+                <a href="/learning" class="btn-primary btn-sm" style="margin-top:12px;">Start Learning</a>
+            </div>
+            {% endif %}
+        </div>
+        {% if growth_data %}
+        <p class="chart-updated">Last updated: just now (live from your activity)</p>
+        {% endif %}
+    </div>
+
+    <!-- Two Column: Radar + Category Mastery -->
+    <div class="two-col reveal" style="margin-top: 24px;">
+        <div class="card">
+            <h3>Category Overview</h3>
+            <div class="chart-canvas-wrap">
+                <canvas id="radarChart"></canvas>
+            </div>
+            <p class="chart-updated">Last updated: just now (live from your activity)</p>
+        </div>
+        <div class="card">
+            <h3>Category Mastery Growth</h3>
+            {% for group_name, group_data in category_growth.items() %}
+            <div class="growth-category">
+                <div class="growth-cat-header">
+                    <span style="color: {{ group_data.color }}; font-weight:600;">{{ group_data.display_name }}</span>
+                    <span class="growth-cat-pct">{{ group_data.current_pct }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ group_data.current_pct }}%; background: {{ group_data.color }}"></div>
+                </div>
+                <span class="growth-delta {% if group_data.delta > 0 %}delta-up{% elif group_data.delta < 0 %}delta-down{% endif %}">
+                    {% if group_data.delta > 0 %}+{% endif %}{{ group_data.delta }}% this week
+                </span>
+            </div>
+            {% endfor %}
+            <p class="chart-updated">Last updated: just now (live from your activity)</p>
+        </div>
+    </div>
+
+    <!-- Quiz Attempts by Topic -->
+    <div class="two-col reveal" style="margin-top: 24px;">
+        <div class="card">
+            <div class="chart-header">
+                <h3>Score Distribution</h3>
+            </div>
+            <div class="chart-canvas-wrap">
+                <canvas id="doughnutChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Quiz Attempts by Topic</h3>
+            {% if topic_attempts %}
+            <div class="attempts-list">
+                {% for ta in topic_attempts %}
+                <div class="attempt-item">
+                    <div class="attempt-info">
+                        <h4>{{ ta.topic_name }}</h4>
+                        <span class="text-secondary" style="font-size:11px;">{{ ta.attempts }} attempt{{ 's' if ta.attempts != 1 }}</span>
+                    </div>
+                    <div class="attempt-scores">
+                        <span class="badge {% if ta.best >= 80 %}badge-green{% elif ta.best >= 50 %}badge-orange{% else %}badge-red{% endif %}">
+                            Best: {{ ta.best }}%
+                        </span>
+                        <span class="badge badge-blue">Latest: {{ ta.latest }}%</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-secondary" style="padding:20px 0;">No quiz attempts yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Full Quiz History (Review Table) -->
+    <div class="card reveal" style="margin-top: 24px;">
+        <div class="chart-header">
+            <h3>Quiz Review</h3>
+            {% if quiz_history %}
+            <span class="badge badge-blue">{{ quiz_history|length }} total</span>
+            {% endif %}
+        </div>
+        {% if quiz_history %}
+        <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr><th>Review</th><th>Topic</th><th>Date</th><th>Score</th></tr>
+            </thead>
+            <tbody>
+                {% for q in quiz_history|reverse %}
+                <tr>
+                    <td><a href="/quiz/review" class="btn-attempt" style="font-size:11px;padding:4px 12px;">Review &rarr;</a></td>
+                    <td><strong>{{ q.topic_name }}</strong></td>
+                    <td style="white-space:nowrap;color:var(--text-muted);font-size:12px;">{{ q.date or '—' }}</td>
+                    <td>
+                        <span class="badge {% if q.score >= 0.8 %}badge-green{% elif q.score >= 0.5 %}badge-orange{% else %}badge-red{% endif %}">
+                            {{ q.correct }}/{{ q.total }} — {{ (q.score * 100)|int }}%
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="chart-empty" style="padding:40px 0;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <p>No quizzes taken yet.</p>
+            <a href="/quiz" class="btn-primary btn-sm" style="margin-top:12px;">Take your first quiz</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+    /* ── Theme-aware colors ── */
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var accent = isDark ? '#4A8AFF' : '#1E54B7';
+    var accentLight = isDark ? 'rgba(74,138,255,0.15)' : 'rgba(30,84,183,0.10)';
+    var gridColor = isDark ? 'rgba(74,138,255,0.08)' : 'rgba(26,35,64,0.06)';
+    var textColor = isDark ? '#8892B0' : '#4A5578';
+    var tooltipBg = isDark ? '#0E0E12' : '#FFFFFF';
+    var tooltipBorder = isDark ? 'rgba(74,138,255,0.2)' : 'rgba(26,35,64,0.1)';
+
+    /* ── Chart.js global defaults ── */
+    if(window.Chart){
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.color = textColor;
+        Chart.defaults.plugins.tooltip.backgroundColor = tooltipBg;
+        Chart.defaults.plugins.tooltip.titleColor = isDark ? '#E8EAF0' : '#1A2340';
+        Chart.defaults.plugins.tooltip.bodyColor = textColor;
+        Chart.defaults.plugins.tooltip.borderColor = tooltipBorder;
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.displayColors = true;
+        Chart.defaults.plugins.tooltip.boxPadding = 4;
+    }
+
+    /* ── Growth Chart — Complete rewrite with immutable data ── */
+    var GROWTH_RAW = JSON.parse(JSON.stringify({{ growth_data | tojson }}));
+    var growthState = { filter: 'all', chartType: 'line' };
+    var growthChart = null;
+
+    /* Category colors — matching GROUP_COLORS from curriculum.py (FROZEN) */
+    var CATEGORY_COLORS = Object.freeze({
+        'quantitative_aptitude': { line: '#2196f3', bar: 'rgba(33,150,243,0.85)',  fill: 'rgba(33,150,243,0.15)' },
+        'logical_reasoning':     { line: '#ff9800', bar: 'rgba(255,152,0,0.85)',   fill: 'rgba(255,152,0,0.15)' },
+        'verbal_ability':        { line: '#4caf50', bar: 'rgba(76,175,80,0.85)',   fill: 'rgba(76,175,80,0.15)' },
+        'data_interpretation':   { line: '#9c27b0', bar: 'rgba(156,39,176,0.85)',  fill: 'rgba(156,39,176,0.15)' },
+        'programming':           { line: '#f44336', bar: 'rgba(244,67,54,0.85)',   fill: 'rgba(244,67,54,0.15)' },
+    });
+    var CATEGORY_NAMES = Object.freeze({
+        'quantitative_aptitude': 'Quantitative Aptitude',
+        'logical_reasoning': 'Logical Reasoning',
+        'verbal_ability': 'Verbal Ability',
+        'data_interpretation': 'Data Interpretation',
+        'programming': 'Programming & CS',
+    });
+
+    function getColor(grp){ return CATEGORY_COLORS[grp] || { line: accent, bar: accent, fill: accentLight }; }
+
+    function buildDataset(grpKey, dataPoints, mode){
+        var col = getColor(grpKey);
+        var isBar = (mode === 'bar');
+        return {
+            label: CATEGORY_NAMES[grpKey] || grpKey,
+            data: dataPoints.slice(),
+            borderColor: col.line,
+            backgroundColor: isBar ? col.bar : col.fill,
+            fill: false,
+            tension: 0.35,
+            /* Fixed dot style — black outline, always */
+            pointRadius: isBar ? 0 : 6,
+            pointHitRadius: 12,
+            pointBackgroundColor: col.line,
+            pointBorderColor: '#000000',
+            pointBorderWidth: 2,
+            pointHoverRadius: 9,
+            pointHoverBorderWidth: 2,
+            pointHoverBackgroundColor: col.line,
+            pointHoverBorderColor: '#000000',
+            /* Line */
+            borderWidth: isBar ? 0 : 2.5,
+            borderRadius: isBar ? 6 : 0,
+            barPercentage: 0.5,
+            order: isBar ? 1 : 0,
+        };
+    }
+
+    function renderGrowthChart(){
+        var ctx = document.getElementById('growthChart');
+        var emptyEl = document.getElementById('growth-empty-state');
+        if(!ctx) return;
+        if(growthChart){ growthChart.destroy(); growthChart = null; }
+
+        var filter = growthState.filter;
+        var mode = growthState.chartType;
+        var chartType = (mode === 'bar') ? 'bar' : 'line';
+
+        /* Always derive fresh from immutable GROWTH_RAW */
+        var source = (filter === 'all')
+            ? GROWTH_RAW.slice()
+            : GROWTH_RAW.filter(function(d){ return d.group === filter; });
+
+        /* Empty state */
+        if(!source.length){
+            ctx.style.display = 'none';
+            if(emptyEl) emptyEl.style.display = 'flex';
+            return;
+        }
+        ctx.style.display = '';
+        if(emptyEl) emptyEl.style.display = 'none';
+
+        var datasets = [];
+        var labels = [];
+
+        if(filter === 'all'){
+            /* Group by category — each gets its own line/bar */
+            var grouped = {};
+            source.forEach(function(d){
+                if(!grouped[d.group]) grouped[d.group] = [];
+                grouped[d.group].push(d.score);
+            });
+            var maxLen = 0;
+            for(var g in grouped){ if(grouped[g].length > maxLen) maxLen = grouped[g].length; }
+            for(var i = 0; i < maxLen; i++) labels.push('Q' + (i+1));
+            for(var grp in grouped){
+                datasets.push(buildDataset(grp, grouped[grp], mode));
+            }
+        } else {
+            labels = source.map(function(d){ return d.label; });
+            datasets.push(buildDataset(filter, source.map(function(d){ return d.score; }), mode));
+        }
+
+        growthChart = new Chart(ctx, {
+            type: chartType,
+            data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                animation: { duration: 500, easing: 'easeOutQuart' },
+                layout: { padding: { top: 20, right: 16, bottom: 8, left: 16 } },
+                scales: {
+                    y: {
+                        beginAtZero: true, min: -4, suggestedMax: 108,
+                        grid: { color: gridColor, drawBorder: false },
+                        ticks: { stepSize: 20, callback: function(v){ return (v >= 0 && v <= 100) ? v+'%' : ''; } }
+                    },
+                    x: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: {
+                        display: datasets.length > 1,
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true, pointStyle: 'circle',
+                            padding: 16, font: { size: 11, weight: '500' },
+                            color: textColor,
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(c){ return c.dataset.label + ': ' + c.parsed.y + '%'; }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    if(document.getElementById('growthChart')) renderGrowthChart();
+
+    /* ── Chart Tab Switcher (Line / Bar only — Area removed) ── */
+    document.querySelectorAll('.chart-tab').forEach(function(tab){
+        tab.addEventListener('click', function(){
+            document.querySelectorAll('.chart-tab').forEach(function(t){ t.classList.remove('active'); });
+            tab.classList.add('active');
+            growthState.chartType = tab.getAttribute('data-chart');
+            renderGrowthChart();
+        });
+    });
+
+    /* ── Category Filter Pills ── */
+    document.querySelectorAll('.chart-filter-pill').forEach(function(pill){
+        pill.addEventListener('click', function(){
+            document.querySelectorAll('.chart-filter-pill').forEach(function(p){
+                p.classList.remove('active');
+                p.style.background = ''; p.style.borderColor = ''; p.style.color = '';
+            });
+            pill.classList.add('active');
+            var f = pill.getAttribute('data-filter');
+            growthState.filter = f;
+            if(f !== 'all' && CATEGORY_COLORS[f]){
+                pill.style.background = CATEGORY_COLORS[f].line;
+                pill.style.borderColor = CATEGORY_COLORS[f].line;
+                pill.style.color = '#fff';
+            }
+            renderGrowthChart();
+        });
+    });
+
+    /* ── Radar Chart (Category Overview) ── */
+    var radarCtx = document.getElementById('radarChart');
+    if(radarCtx){
+        var catGrowth = {{ category_growth | tojson }};
+        var catLabels = []; var catValues = []; var radarColors = [];
+        for(var k in catGrowth){
+            catLabels.push(catGrowth[k].display_name);
+            catValues.push(catGrowth[k].current_pct);
+            radarColors.push(catGrowth[k].color);
+        }
+        new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    label: 'Mastery %',
+                    data: catValues,
+                    borderColor: accent,
+                    backgroundColor: accentLight,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: accent,
+                    pointBorderColor: isDark ? '#000' : '#fff',
+                    pointBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 800 },
+                scales: {
+                    r: {
+                        beginAtZero: true, max: 100,
+                        grid: { color: gridColor },
+                        angleLines: { color: gridColor },
+                        pointLabels: { font: { size: 11, weight: '500' }, color: textColor },
+                        ticks: { display: false, stepSize: 25 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(ctx){ return ctx.parsed.r + '% mastery'; } } }
+                }
+            }
+        });
+    }
+
+    /* ── Doughnut Chart (Score Distribution) ── */
+    var doughCtx = document.getElementById('doughnutChart');
+    if(doughCtx){
+        var quizHist = {{ quiz_history | tojson }};
+        var excellent=0, good=0, needsWork=0;
+        quizHist.forEach(function(q){
+            var s = q.score * 100;
+            if(s >= 80) excellent++;
+            else if(s >= 50) good++;
+            else needsWork++;
+        });
+        var hasData = excellent + good + needsWork > 0;
+        new Chart(doughCtx, {
+            type: 'doughnut',
+            data: {
+                labels: hasData ? ['Excellent (80%+)', 'Good (50-79%)', 'Needs Work (<50%)'] : ['No data yet'],
+                datasets: [{
+                    data: hasData ? [excellent, good, needsWork] : [1],
+                    backgroundColor: hasData ? ['#22c55e', '#f59e0b', '#ef4444'] : [gridColor],
+                    borderColor: '#000000',
+                    borderWidth: 2,
+                    hoverOffset: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                animation: { duration: 800, animateRotate: true },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+    /* ── Growth Quote ── */
+    var gq = [
+        "Small daily improvements lead to stunning results.",
+        "Progress is not always linear — keep going.",
+        "Every quiz you take makes you sharper.",
+        "Consistency beats intensity. Show up every day.",
+        "Your growth curve is uniquely yours. Own it.",
+    ];
+    var gel = document.getElementById('growth-quote-text');
+    if(gel) gel.textContent = gq[Math.floor(Math.random()*gq.length)];
+})();
+</script>
+{% endblock %}

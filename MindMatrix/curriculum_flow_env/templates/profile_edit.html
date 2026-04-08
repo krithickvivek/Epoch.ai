@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile — Epoch.ai{% endblock %}
+{% block content %}
+<div class="container" style="max-width:860px;">
+
+    <!-- Page Header -->
+    <div class="pe-page-header reveal">
+        <div>
+            <h1 class="pe-title">Edit Profile</h1>
+            <p class="pe-subtitle">Customize how you appear on Epoch.ai</p>
+        </div>
+        <a href="/profile" class="pe-back-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Back to Profile
+        </a>
+    </div>
+
+    <form method="POST" action="/profile/edit" id="pe-form">
+        <!-- Hidden fields for custom selects + traits -->
+        <input type="hidden" name="role" id="pe-role-val" value="{{ user.role or 'student' }}">
+        <input type="hidden" name="experience_level" id="pe-exp-val" value="{{ user.experience_level or 'beginner' }}">
+        <input type="hidden" name="bio" id="pe-bio-val" value="{{ user.bio or '' }}">
+        <input type="hidden" name="profile_pic" id="pe-pic-val" value="{{ user.profile_pic or '' }}">
+
+        <div class="pe-layout reveal reveal-delay-1">
+
+            <!-- LEFT: Avatar Preview Card -->
+            <div class="pe-preview-card">
+                <div class="pe-avatar-wrap">
+                    <div class="pe-avatar" id="pe-avatar">
+                        {% if user.profile_pic %}
+                        <img src="{{ user.profile_pic }}" alt="avatar" id="pe-avatar-img" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                        {% else %}
+                        <span id="pe-avatar-letter">{{ user.name[0] | upper }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="pe-avatar-ring"></div>
+                    <label class="pe-avatar-upload" title="Upload photo">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <input type="file" accept="image/*" id="pe-file-input" style="display:none;">
+                    </label>
+                </div>
+                <div class="pe-preview-name" id="pe-preview-name">{{ user.name }}</div>
+                <div class="pe-preview-email">{{ user.email }}</div>
+                {% if user.role %}
+                <span class="badge badge-purple" style="margin-top:8px;" id="pe-preview-role">{{ user.role | replace('_', ' ') | title }}</span>
+                {% endif %}
+                <div class="pe-preview-traits" id="pe-preview-traits">
+                    {% if user.bio %}
+                    {% for t in user.bio.split(',') %}{% if t.strip() %}<span class="pe-trait-mini">{{ t.strip() }}</span>{% endif %}{% endfor %}
+                    {% endif %}
+                </div>
+                {% if user.experience_level %}
+                <div class="pe-preview-meta">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    {{ user.experience_level | replace('_', ' ') | title }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- RIGHT: Form Fields -->
+            <div class="pe-form-col">
+
+                <!-- Personal Info Section -->
+                <div class="pe-section">
+                    <div class="pe-section-header">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span>Personal Information</span>
+                    </div>
+
+                    <div class="pe-field">
+                        <label class="pe-label">Full Name</label>
+                        <input type="text" name="name" id="pe-name-input" value="{{ user.name }}" class="pe-input" required placeholder="Your full name">
+                    </div>
+
+                    <div class="pe-field-row">
+                        <div class="pe-field">
+                            <label class="pe-label">Role</label>
+                            <div class="pe-custom-select" id="pe-role-select" data-target="pe-role-val">
+                                <div class="pe-cs-trigger" tabindex="0">
+                                    <span class="pe-cs-label" id="pe-role-label">{{ (user.role or 'student') | replace('_', ' ') | title }}</span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                                <div class="pe-cs-dropdown">
+                                    <div class="pe-cs-option {% if user.role == 'student' %}selected{% endif %}" data-value="student">Student</div>
+                                    <div class="pe-cs-option {% if user.role == 'professional' %}selected{% endif %}" data-value="professional">Professional</div>
+                                    <div class="pe-cs-option {% if user.role == 'educator' %}selected{% endif %}" data-value="educator">Educator</div>
+                                    <div class="pe-cs-option {% if user.role == 'self_learner' %}selected{% endif %}" data-value="self_learner">Self Learner</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pe-field">
+                            <label class="pe-label">Experience</label>
+                            <div class="pe-custom-select" id="pe-exp-select" data-target="pe-exp-val">
+                                <div class="pe-cs-trigger" tabindex="0">
+                                    <span class="pe-cs-label" id="pe-exp-label">{{ (user.experience_level or 'beginner') | replace('_', ' ') | title }}</span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                                <div class="pe-cs-dropdown">
+                                    <div class="pe-cs-option {% if user.experience_level == 'beginner' %}selected{% endif %}" data-value="beginner">Beginner</div>
+                                    <div class="pe-cs-option {% if user.experience_level == 'intermediate' %}selected{% endif %}" data-value="intermediate">Intermediate</div>
+                                    <div class="pe-cs-option {% if user.experience_level == 'advanced' %}selected{% endif %}" data-value="advanced">Advanced</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pe-field">
+                        <label class="pe-label">Organization <span class="pe-optional">optional</span></label>
+                        <input type="text" name="organization" value="{{ user.organization or '' }}" class="pe-input" placeholder="School, university, or company">
+                    </div>
+                </div>
+
+                <!-- Traits Section (replaces Bio) -->
+                <div class="pe-section">
+                    <div class="pe-section-header">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <span>What Describes You</span>
+                    </div>
+                    <p class="pe-trait-hint">Choose up to 3 traits that best describe you</p>
+                    <div class="pe-traits-grid" id="pe-traits-grid">
+                        {% set all_traits = [
+                            ("Curious Learner", "brain"),
+                            ("Goal-Oriented", "target"),
+                            ("Problem Solver", "puzzle"),
+                            ("Team Player", "users"),
+                            ("Self-Motivated", "rocket"),
+                            ("Detail-Oriented", "search"),
+                            ("Creative Thinker", "bulb"),
+                            ("Fast Learner", "bolt"),
+                            ("Analytical Mind", "chart"),
+                            ("Competitive", "trophy"),
+                            ("Consistent", "calendar"),
+                            ("Night Owl", "moon")
+                        ] %}
+                        {% set selected_traits = (user.bio or '').split(',') | map('trim') | list %}
+                        {% for trait_name, trait_icon in all_traits %}
+                        <button type="button" class="pe-trait-chip {% if trait_name in selected_traits %}active{% endif %}" data-trait="{{ trait_name }}">
+                            {% if trait_icon == 'brain' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+                            {% elif trait_icon == 'target' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                            {% elif trait_icon == 'puzzle' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                            {% elif trait_icon == 'users' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            {% elif trait_icon == 'rocket' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>
+                            {% elif trait_icon == 'search' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            {% elif trait_icon == 'bulb' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 4 12.73V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.27A7 7 0 0 1 12 2z"/><line x1="10" y1="21" x2="14" y2="21"/></svg>
+                            {% elif trait_icon == 'bolt' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            {% elif trait_icon == 'chart' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            {% elif trait_icon == 'trophy' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4a2 2 0 0 1-2-2V4h4"/><path d="M18 9h2a2 2 0 0 0 2-2V4h-4"/><path d="M4 22h16"/><path d="M10 22V8a6 6 0 1 0-4 0v14"/></svg>
+                            {% elif trait_icon == 'calendar' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            {% elif trait_icon == 'moon' %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                            {% endif %}
+                            <span>{{ trait_name }}</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <div class="pe-trait-count"><span id="pe-trait-count">{{ selected_traits | select('ne', '') | list | length }}</span>/3 selected</div>
+                </div>
+
+                <!-- Actions -->
+                <div class="pe-actions">
+                    <button type="submit" class="pe-btn-save">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Save Changes
+                    </button>
+                    <a href="/profile" class="pe-btn-cancel">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+(function(){
+    // ─── Custom Select Dropdowns ───
+    document.querySelectorAll('.pe-custom-select').forEach(function(sel){
+        var trigger = sel.querySelector('.pe-cs-trigger');
+        var dropdown = sel.querySelector('.pe-cs-dropdown');
+        var label = sel.querySelector('.pe-cs-label');
+        var targetId = sel.dataset.target;
+        var hidden = document.getElementById(targetId);
+
+        trigger.addEventListener('click', function(e){
+            e.stopPropagation();
+            // Close all others
+            document.querySelectorAll('.pe-custom-select.open').forEach(function(s){
+                if (s !== sel) s.classList.remove('open');
+            });
+            sel.classList.toggle('open');
+        });
+
+        sel.querySelectorAll('.pe-cs-option').forEach(function(opt){
+            opt.addEventListener('click', function(){
+                sel.querySelectorAll('.pe-cs-option').forEach(function(o){ o.classList.remove('selected'); });
+                opt.classList.add('selected');
+                label.textContent = opt.textContent;
+                hidden.value = opt.dataset.value;
+                sel.classList.remove('open');
+                // Update role preview
+                if (targetId === 'pe-role-val') {
+                    var badge = document.getElementById('pe-preview-role');
+                    if (badge) badge.textContent = opt.textContent;
+                }
+            });
+        });
+    });
+    document.addEventListener('click', function(){ document.querySelectorAll('.pe-custom-select.open').forEach(function(s){ s.classList.remove('open'); }); });
+
+    // ─── Trait Chips ───
+    var maxTraits = 3;
+    var traitsGrid = document.getElementById('pe-traits-grid');
+    var bioHidden = document.getElementById('pe-bio-val');
+    var countEl = document.getElementById('pe-trait-count');
+    var previewTraits = document.getElementById('pe-preview-traits');
+
+    function updateTraits(){
+        var active = traitsGrid.querySelectorAll('.pe-trait-chip.active');
+        var names = [];
+        active.forEach(function(c){ names.push(c.dataset.trait); });
+        bioHidden.value = names.join(', ');
+        countEl.textContent = names.length;
+        // Update preview
+        previewTraits.innerHTML = names.map(function(n){ return '<span class="pe-trait-mini">' + n + '</span>'; }).join('');
+    }
+
+    traitsGrid.querySelectorAll('.pe-trait-chip').forEach(function(chip){
+        chip.addEventListener('click', function(){
+            if (chip.classList.contains('active')) {
+                chip.classList.remove('active');
+            } else {
+                var active = traitsGrid.querySelectorAll('.pe-trait-chip.active');
+                if (active.length >= maxTraits) return; // max 3
+                chip.classList.add('active');
+            }
+            updateTraits();
+        });
+    });
+
+    // ─── Live Name Preview ───
+    var nameInput = document.getElementById('pe-name-input');
+    var letter = document.getElementById('pe-avatar-letter');
+    var nameEl = document.getElementById('pe-preview-name');
+    if (nameInput) {
+        nameInput.addEventListener('input', function(){
+            var v = this.value.trim();
+            if (letter) letter.textContent = v ? v[0].toUpperCase() : '?';
+            if (nameEl) nameEl.textContent = v || 'Your Name';
+        });
+    }
+
+    // ─── Profile Picture Upload ───
+    var fileInput = document.getElementById('pe-file-input');
+    var avatar = document.getElementById('pe-avatar');
+    var picHidden = document.getElementById('pe-pic-val');
+
+    fileInput.addEventListener('change', function(){
+        var file = this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e){
+            var dataUrl = e.target.result;
+            avatar.innerHTML = '<img src="' + dataUrl + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+            picHidden.value = dataUrl;
+        };
+        reader.readAsDataURL(file);
+    });
+})();
+</script>
+{% endblock %}

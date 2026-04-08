@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Home — Epoch.ai{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="dash-welcome">
+        <span class="dw-name">Welcome back, {{ user.name }}</span>
+        <span class="dw-divider"></span>
+        <span class="dw-quote">Every time you arrive, everything is different.</span>
+    </div>
+
+    <div class="home-cards">
+        <a href="/learning" class="home-card reveal reveal-delay-1">
+            <div class="home-card-icon" style="background:var(--cobalt-muted);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <h3>Start Learning</h3>
+            <p>Choose a topic and let AI guide your study path</p>
+            <span class="card-arrow">&rarr;</span>
+        </a>
+        <a href="/quiz" class="home-card reveal reveal-delay-2">
+            <div class="home-card-icon" style="background:var(--cobalt-muted);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h3>Take a Quiz</h3>
+            <p>Test your knowledge with adaptive assessments</p>
+            <span class="card-arrow">&rarr;</span>
+        </a>
+        <a href="/growth" class="home-card reveal reveal-delay-3">
+            <div class="home-card-icon" style="background:var(--cobalt-muted);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <h3>Growth Analysis</h3>
+            <p>Track your progress and see improvement trends</p>
+            <span class="card-arrow">&rarr;</span>
+        </a>
+        <a href="/profile" class="home-card reveal reveal-delay-4">
+            <div class="home-card-icon" style="background:var(--cobalt-muted);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h3>My Profile</h3>
+            <p>View your stats, badges, and learning history</p>
+            <span class="card-arrow">&rarr;</span>
+        </a>
+    </div>
+
+    {% if recent_topics %}
+    <div class="section reveal">
+        <h2 class="section-title">Continue Learning</h2>
+        <div class="carousel-wrapper" id="continue-carousel">
+            <button class="carousel-arrow carousel-arrow-prev" onclick="carouselPrev()" aria-label="Previous">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="carousel-track">
+                <div class="carousel-slide-window" id="carousel-slides">
+                    {% for topic in recent_topics %}
+                    <div class="carousel-slide">
+                        <a href="/learning/study?topic={{ topic.id }}" class="continue-card" style="border-left:3px solid {{ topic.color }};">
+                            <div class="continue-card-top">
+                                <div class="continue-ring" style="--pct: {{ (topic.mastery * 100)|int }}">
+                                    <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="var(--border-subtle)" stroke-width="3"/><circle cx="20" cy="20" r="17" fill="none" stroke="{{ topic.color }}" stroke-width="3" stroke-linecap="round" stroke-dasharray="{{ (topic.mastery * 106.8)|round(1) }} 106.8" transform="rotate(-90 20 20)"/></svg>
+                                    <span>{{ (topic.mastery * 100)|int }}%</span>
+                                </div>
+                                <div class="continue-info">
+                                    <h4>{{ topic.display_name }}</h4>
+                                    <span class="continue-group" style="color:{{ topic.color }};">{{ topic.group }}</span>
+                                </div>
+                            </div>
+                            <div class="continue-bar"><div class="continue-bar-fill" style="width:{{ (topic.mastery * 100)|int }}%;background:{{ topic.color }};"></div></div>
+                            <div class="continue-footer">
+                                <span class="continue-status" style="color:{{ topic.color }};">{% if topic.mastery >= 0.8 %}Mastered{% elif topic.mastery >= 0.5 %}Intermediate{% elif topic.mastery > 0 %}In Progress{% else %}Not Started{% endif %}</span>
+                                <span class="continue-resume">Resume &rarr;</span>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button class="carousel-arrow carousel-arrow-next" onclick="carouselNext()" aria-label="Next">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <div class="carousel-dots" id="carousel-dots">
+                {% for topic in recent_topics %}
+                <button class="carousel-dot {% if loop.index0 == 0 %}active{% endif %}" onclick="carouselGo({{ loop.index0 }})"></button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Motivational Quote -->
+    <div class="section reveal" id="quote-section">
+        <div class="quote-card">
+            <svg class="quote-icon" viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="var(--accent)" opacity="0.15"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="var(--accent)" opacity="0.15"/></svg>
+            <p class="quote-text" id="motivational-quote"></p>
+            <span class="quote-author" id="quote-author"></span>
+        </div>
+    </div>
+
+    <!-- OpenENV Showcase Section -->
+    <div class="section reveal" style="margin-top:24px;">
+        <h2 class="section-title" style="display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--accent);">&#9889;</span> Powered by OpenENV
+        </h2>
+        <div class="home-cards" style="grid-template-columns:1fr 1fr;">
+            <a href="/simulation" class="home-card" style="border-color:var(--accent);">
+                <div class="home-card-icon" style="background:var(--cobalt-muted);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <h3 style="color:var(--accent);">AI Simulation Lab</h3>
+                <p>Watch 3 RL agents optimize learning in real-time. Run full episodes with different student archetypes.</p>
+                <span class="card-arrow" style="color:var(--accent);">&rarr;</span>
+            </a>
+            <a href="/api-explorer" class="home-card" style="border-color:var(--accent);">
+                <div class="home-card-icon" style="background:var(--cobalt-muted);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <h3 style="color:var(--accent);">API Explorer</h3>
+                <p>Test all OpenENV 0.1 endpoints interactively. /reset, /step, /state, /health — try them live.</p>
+                <span class="card-arrow" style="color:var(--accent);">&rarr;</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- AI Agent Recommendation Panel -->
+    <div id="home-ai-rec" class="ai-rec-panel reveal" style="display:none;">
+        <div class="ai-rec-header">
+            <div class="ai-rec-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg></div>
+            <div>
+                <div class="ai-rec-title">AI Agents Recommendation</div>
+                <div class="ai-rec-sub" id="ai-rec-sub">Analyzing your learning data...</div>
+            </div>
+        </div>
+        <div class="ai-rec-agents" id="ai-rec-agents"></div>
+        <a href="#" id="ai-rec-action" class="ai-rec-cta">Start Studying &rarr;</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(async function() {
+    try {
+        const resp = await fetch('/api/agent/recommend');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const a = data.agents;
+        const el = document.getElementById('home-ai-rec');
+        el.style.display = 'block';
+        document.getElementById('ai-rec-sub').textContent = `Overall mastery: ${data.total_mastery}% · ${data.unlocked_count} topics unlocked`;
+        document.getElementById('ai-rec-agents').innerHTML = `
+            <div class="ai-rec-agent">
+                <div class="ai-rec-agent-dot" style="background:var(--accent);"></div>
+                <div class="ai-rec-agent-body">
+                    <span class="ai-rec-agent-label">Topic Sequencer</span>
+                    <span class="ai-rec-agent-val">Study <strong>${a.topic_sequencer.topic_name}</strong></span>
+                    <span class="ai-rec-agent-why">${a.topic_sequencer.reason}</span>
+                </div>
+            </div>
+            <div class="ai-rec-agent">
+                <div class="ai-rec-agent-dot" style="background:#f59e0b;"></div>
+                <div class="ai-rec-agent-body">
+                    <span class="ai-rec-agent-label">Difficulty Adapter</span>
+                    <span class="ai-rec-agent-val">Level <strong>${a.difficulty_adapter.action}/5</strong></span>
+                    <span class="ai-rec-agent-why">${a.difficulty_adapter.reason}</span>
+                </div>
+            </div>
+            <div class="ai-rec-agent">
+                <div class="ai-rec-agent-dot" style="background:#22c55e;"></div>
+                <div class="ai-rec-agent-body">
+                    <span class="ai-rec-agent-label">Assessment Timer</span>
+                    <span class="ai-rec-agent-val"><strong>${a.assessment_timer.action_label}</strong></span>
+                    <span class="ai-rec-agent-why">${a.assessment_timer.reason}</span>
+                </div>
+            </div>`;
+        const cta = document.getElementById('ai-rec-action');
+        cta.href = '/learning/study?topic=' + a.topic_sequencer.action;
+        cta.textContent = a.assessment_timer.action === 1 ? `Take Quiz: ${a.topic_sequencer.topic_name} →` : `Study: ${a.topic_sequencer.topic_name} →`;
+    } catch(e) {}
+})();
+/* ── Carousel (absolute-positioned slides) ── */
+(function(){
+    var slides = document.querySelectorAll('.carousel-slide');
+    var dots = document.querySelectorAll('.carousel-dot');
+    var window_ = document.getElementById('carousel-slides');
+    if (!slides.length || !window_) return;
+
+    var total = slides.length;
+    var current = 0;
+    var paused = false;
+
+    // Set container height from first slide
+    function setHeight() {
+        slides[0].style.position = 'relative';
+        var h = slides[0].offsetHeight;
+        slides[0].style.position = '';
+        window_.style.height = h + 'px';
+    }
+    setHeight();
+    window.addEventListener('resize', setHeight);
+
+    function go(idx) {
+        var prev = current;
+        current = ((idx % total) + total) % total;
+        slides.forEach(function(s, i) {
+            if (i === current) {
+                s.setAttribute('data-state', 'active');
+            } else if (i === prev && prev !== current) {
+                // slide out in direction of travel
+                s.setAttribute('data-state', idx > prev ? 'prev' : 'next');
+            } else {
+                // pre-position off-screen on the incoming side
+                s.setAttribute('data-state', 'next');
+                s.style.transition = 'none';
+                requestAnimationFrame(function(){ s.style.transition = ''; });
+            }
+        });
+        dots.forEach(function(d, i) { d.classList.toggle('active', i === current); });
+    }
+
+    window.carouselNext = function(){ go(current + 1); };
+    window.carouselPrev = function(){ go(current - 1); };
+    window.carouselGo   = function(i){ go(i); };
+
+    // Init: first slide active, rest hidden to the right
+    slides.forEach(function(s, i) {
+        s.setAttribute('data-state', i === 0 ? 'active' : 'next');
+    });
+
+    // Auto-advance
+    setInterval(function(){ if (!paused) window.carouselNext(); }, 6000);
+
+    var wrapper = document.getElementById('continue-carousel');
+    if (wrapper) {
+        wrapper.addEventListener('mouseenter', function(){ paused = true; });
+        wrapper.addEventListener('mouseleave', function(){ paused = false; });
+    }
+})();
+
+/* ── Motivational Quotes ── */
+(function(){
+    var quotes = [
+        {t:"The expert in anything was once a beginner.",a:"Helen Hayes"},
+        {t:"Education is not the filling of a pail, but the lighting of a fire.",a:"W.B. Yeats"},
+        {t:"The beautiful thing about learning is nobody can take it away from you.",a:"B.B. King"},
+        {t:"Success is the sum of small efforts, repeated day in and day out.",a:"Robert Collier"},
+        {t:"It does not matter how slowly you go as long as you do not stop.",a:"Confucius"},
+        {t:"The only way to do great work is to love what you learn.",a:"Adapted"},
+        {t:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
+        {t:"Live as if you were to die tomorrow. Learn as if you were to live forever.",a:"Mahatma Gandhi"},
+        {t:"The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice.",a:"Brian Herbert"},
+        {t:"Every accomplishment starts with the decision to try.",a:"John F. Kennedy"},
+    ];
+    var q = quotes[Math.floor(Math.random()*quotes.length)];
+    var el = document.getElementById('motivational-quote');
+    var au = document.getElementById('quote-author');
+    if(el){ el.textContent = q.t; }
+    if(au){ au.textContent = '— '+q.a; }
+})();
+</script>
+{% endblock %}

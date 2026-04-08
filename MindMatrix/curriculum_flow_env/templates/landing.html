@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epoch.ai — AI-Powered Adaptive Learning</title>
+    <script>
+    (function(){var t=localStorage.getItem('epoch-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);})();
+    </script>
+    <link rel="stylesheet" href="/static/css/style.css?v=10">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="landing-body grain">
+    <nav class="navbar navbar-landing">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <span class="nav-logo-mark"><svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,18 6,13 10,15 15,8 20,4"/><polyline points="17,4 20,4 20,7"/></svg></span>
+                <span>Epoch<span class="nav-logo-ext" style="color:var(--accent);">.ai</span></span>
+            </a>
+            <div class="nav-links" style="gap:12px;align-items:center;">
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"></button>
+                <a href="/login" class="btn-secondary btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.2);">Sign In</a>
+                <a href="/signup" class="btn-primary btn-sm">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="landing-main">
+        <div class="landing-hero">
+            <div class="landing-badge">AI-POWERED ADAPTIVE LEARNING</div>
+
+            <h1 class="hero-headline">
+                The curriculum that<br>learns you.
+            </h1>
+
+            <p class="hero-quote">
+                Every time you arrive, everything is different.
+            </p>
+
+            <div class="landing-cta">
+                <a href="/signup" class="btn-primary btn-lg">Start your first epoch &rarr;</a>
+                <a href="#how-it-works" class="btn-ghost btn-lg">Explore the curriculum</a>
+            </div>
+
+            <div class="landing-stats">
+                <div class="landing-stat">
+                    <span class="stat-number" data-count="40">0</span>
+                    <span class="stat-label">TOPICS</span>
+                </div>
+                <div class="landing-stat">
+                    <span class="stat-number" data-count="5">0</span>
+                    <span class="stat-label">CATEGORIES</span>
+                </div>
+                <div class="landing-stat">
+                    <span class="stat-number stat-text">STEP BY STEP</span>
+                    <span class="stat-label">ADAPTIVE</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-preview reveal">
+            <div class="code-window">
+                <div class="window-dots">
+                    <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                    <span class="window-title">adaptive.learning</span>
+                </div>
+                <pre class="code-content"><code><span class="kw">class</span> <span class="fn">CurriculumAgent</span>:
+    <span class="kw">def</span> <span class="fn">select_next_topic</span>(self, student):
+        unlocked = self.get_unlocked(student)
+        <span class="kw">return</span> min(unlocked, key=<span class="kw">lambda</span> t: t.mastery)
+
+    <span class="kw">def</span> <span class="fn">adapt_difficulty</span>(self, mastery):
+        <span class="kw">return</span> clip(round(mastery * <span class="num">5</span>), <span class="num">1</span>, <span class="num">5</span>)
+
+    <span class="kw">def</span> <span class="fn">should_quiz</span>(self, student):
+        <span class="kw">return</span> student.accuracy > <span class="num">0.7</span></code></pre>
+            </div>
+        </div>
+
+        <section id="how-it-works" class="landing-section reveal">
+            <h2 class="section-title" style="text-align:center;font-size:24px;letter-spacing:-0.02em;">How It Works</h2>
+            <div class="features-grid">
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-icon" style="background: var(--cobalt-muted); color: var(--accent);">01</div>
+                    <h3>AI Assesses You</h3>
+                    <p>Three specialized agents evaluate your current knowledge across 40 placement topics from Aptitude to Programming.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-icon" style="background: var(--cobalt-muted); color: var(--accent);">02</div>
+                    <h3>Adaptive Path</h3>
+                    <p>The Topic Sequencer picks your weakest unlocked topic. The Difficulty Agent adjusts problem complexity to your zone of proximal development.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-3">
+                    <div class="feature-icon" style="background: var(--cobalt-muted); color: var(--accent);">03</div>
+                    <h3>Smart Quizzes</h3>
+                    <p>The Assessment Timer knows exactly when to quiz you — using Ebbinghaus forgetting curves to maximize retention.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-4">
+                    <div class="feature-icon" style="background: var(--cobalt-muted); color: var(--accent);">04</div>
+                    <h3>Track Growth</h3>
+                    <p>Detailed analytics show your progress per category, quiz history, mastery trends, and personalized recommendations.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-section reveal">
+            <h2 class="section-title" style="text-align:center;font-size:24px;letter-spacing:-0.02em;">5 Categories. 40 Topics. Your Pace.</h2>
+            <div class="category-grid">
+                <div class="category-card reveal reveal-delay-1" style="border-left: 3px solid var(--accent);">
+                    <h4>Quantitative Aptitude</h4>
+                    <p>Numbers, Percentages, Profit & Loss, Time & Work, Permutations...</p>
+                    <span class="badge badge-blue">12 Topics</span>
+                </div>
+                <div class="category-card reveal reveal-delay-2" style="border-left: 3px solid var(--accent);">
+                    <h4>Logical Reasoning</h4>
+                    <p>Coding-Decoding, Blood Relations, Syllogism, Seating Arrangement...</p>
+                    <span class="badge badge-orange">8 Topics</span>
+                </div>
+                <div class="category-card reveal reveal-delay-3" style="border-left: 3px solid var(--accent);">
+                    <h4>Verbal Ability</h4>
+                    <p>Synonyms, Antonyms, Reading Comprehension, Spotting Errors...</p>
+                    <span class="badge badge-green">7 Topics</span>
+                </div>
+                <div class="category-card reveal reveal-delay-1" style="border-left: 3px solid var(--accent);">
+                    <h4>Data Interpretation</h4>
+                    <p>Tables, Bar Graphs, Pie Charts, Line Graphs...</p>
+                    <span class="badge badge-purple">4 Topics</span>
+                </div>
+                <div class="category-card reveal reveal-delay-2" style="border-left: 3px solid var(--accent);">
+                    <h4>Programming & CS</h4>
+                    <p>C Basics, OOP, Data Structures, Algorithms, SQL...</p>
+                    <span class="badge badge-red">9 Topics</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-section cta-section reveal">
+            <h2>Ready to ace your placements?</h2>
+            <p>Join Epoch.ai and let AI optimize your preparation.</p>
+            <a href="/signup" class="btn-primary btn-lg">Create Free Account &rarr;</a>
+        </section>
+
+        <footer class="landing-footer">
+            <p>Built for Meta x HuggingFace OpenENV Hackathon 2026 | Powered by OpenENV 0.1</p>
+        </footer>
+    </main>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

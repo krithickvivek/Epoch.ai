@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block title %}AI Simulation — Epoch.ai{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <!-- Header -->
+  <div class="page-header" style="margin-bottom:24px;">
+    <h1 style="color:var(--text-heading);font-size:24px;font-weight:700;">
+      <span style="color:var(--accent);">OpenENV</span> AI Simulation
+    </h1>
+    <p style="color:var(--text-secondary);margin-top:4px;font-size:14px;">
+      Watch 3 RL agents collaborate in real-time to optimize a student's learning path.
+      This is the core of the <strong style="color:var(--accent);">OpenENV 0.1</strong> gymnasium environment.
+    </p>
+  </div>
+
+  <!-- Agent Architecture Diagram -->
+  <div class="card" style="margin-bottom:20px;padding:20px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:12px;">OpenENV Agent Architecture</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;">
+      <div style="padding:14px;border-radius:var(--radius-md);border:1.5px solid var(--accent);background:var(--cobalt-muted);">
+        <div style="font-size:20px;margin-bottom:6px;">🎯</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);">Topic Sequencer</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Picks weakest unlocked topic</div>
+      </div>
+      <div style="padding:14px;border-radius:var(--radius-md);border:1.5px solid var(--accent);background:var(--cobalt-muted);">
+        <div style="font-size:20px;margin-bottom:6px;">📊</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);">Difficulty Adapter</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Zone of Proximal Development</div>
+      </div>
+      <div style="padding:14px;border-radius:var(--radius-md);border:1.5px solid var(--accent);background:var(--cobalt-muted);">
+        <div style="font-size:20px;margin-bottom:6px;">⏱️</div>
+        <div style="font-size:13px;font-weight:600;color:var(--accent);">Assessment Timer</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">Ebbinghaus forgetting curve</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-muted);">
+      Student Model (cognitive simulation) → Env.step() → Reward Function → Agent Updates → Repeat
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card" style="margin-bottom:20px;padding:16px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div>
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);display:block;margin-bottom:4px;">Student Archetype</label>
+        <select id="sim-archetype" style="padding:8px 12px;border-radius:var(--radius-md);border:1px solid var(--border-default);background:var(--bg-input,var(--bg-surface));color:var(--text-primary);font-size:13px;">
+          {% for a in archetypes %}
+          <option value="{{ a }}" {% if a == 'steady' %}selected{% endif %}>{{ a | capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);display:block;margin-bottom:4px;">Max Steps</label>
+        <input id="sim-steps" type="number" value="100" min="20" max="500" step="10"
+               style="width:80px;padding:8px 12px;border-radius:var(--radius-md);border:1px solid var(--border-default);background:var(--bg-input,var(--bg-surface));color:var(--text-primary);font-size:13px;">
+      </div>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button id="btn-run-episode" onclick="runFullEpisode()"
+                style="padding:10px 24px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:13px;border:none;cursor:pointer;">
+          Run Full Episode
+        </button>
+        <button id="btn-reset" onclick="resetSimulation()"
+                style="padding:10px 16px;border-radius:var(--radius-md);background:transparent;color:var(--accent);font-weight:600;font-size:13px;border:1.5px solid var(--accent);cursor:pointer;">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Stats Row -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
+    <div class="card" style="padding:14px;text-align:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Step</div>
+      <div id="stat-step" style="font-size:22px;font-weight:600;color:var(--accent);margin-top:4px;">0</div>
+    </div>
+    <div class="card" style="padding:14px;text-align:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Topics Mastered</div>
+      <div id="stat-mastered" style="font-size:22px;font-weight:600;color:var(--accent);margin-top:4px;">0 / 40</div>
+    </div>
+    <div class="card" style="padding:14px;text-align:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Completion</div>
+      <div id="stat-completion" style="font-size:22px;font-weight:600;color:var(--accent);margin-top:4px;">0%</div>
+    </div>
+    <div class="card" style="padding:14px;text-align:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Engagement</div>
+      <div id="stat-engagement" style="font-size:22px;font-weight:600;color:var(--accent);margin-top:4px;">80%</div>
+    </div>
+    <div class="card" style="padding:14px;text-align:center;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-md);">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Total Reward</div>
+      <div id="stat-reward" style="font-size:22px;font-weight:600;color:var(--accent);margin-top:4px;">0.0</div>
+    </div>
+  </div>
+
+  <!-- Main content: Mastery Heatmap + Agent Log -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;">
+    <!-- Mastery Heatmap -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+      <div style="font-size:13px;font-weight:600;color:var(--text-heading);margin-bottom:12px;">Topic Mastery Heatmap (live)</div>
+      <div id="mastery-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;">
+        {% for tid, name in topic_names.items() %}
+        <div id="mastery-cell-{{ tid }}" style="padding:8px 4px;border-radius:var(--radius-sm);text-align:center;font-size:10px;font-weight:500;background:var(--progress-track);color:var(--text-muted);transition:background 0.3s,color 0.3s;" title="{{ name }}">
+          <div style="font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ name }}</div>
+          <div class="mastery-val" style="font-size:12px;font-weight:600;margin-top:2px;">0%</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Agent Decision Log -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);max-height:400px;overflow-y:auto;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-heading);margin-bottom:12px;">Agent Decision Log</div>
+      <div id="agent-log" style="font-size:12px;color:var(--text-secondary);">
+        <div style="color:var(--text-muted);font-style:italic;">Run an episode to see agent decisions...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reward Decomposition -->
+  <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);margin-bottom:20px;">
+    <div style="font-size:13px;font-weight:600;color:var(--text-heading);margin-bottom:12px;">Reward Function Decomposition</div>
+    <div id="reward-bars" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <div class="reward-component" data-key="milestone_bonus">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Milestone Bonus</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
+      </div>
+      <div class="reward-component" data-key="learning_gain">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Learning Gain</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
+      </div>
+      <div class="reward-component" data-key="stretch_reward">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Stretch Challenge</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
+      </div>
+      <div class="reward-component" data-key="assessment_reward">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Assessment</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
+      </div>
+      <div class="reward-component" data-key="dropout_penalty">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Dropout Risk</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:#E74C3C;border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:#E74C3C;margin-top:2px;">0.0</div>
+      </div>
+      <div class="reward-component" data-key="opportunity_cost">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Opportunity Cost</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:#E74C3C;border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:#E74C3C;margin-top:2px;">0.0</div>
+      </div>
+      <div class="reward-component" data-key="retention_penalty">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Retention Penalty</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:#E74C3C;border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:#E74C3C;margin-top:2px;">0.0</div>
+      </div>
+      <div class="reward-component" data-key="completion_bonus">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Completion Bonus</div>
+        <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
+          <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
+        </div>
+        <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OpenENV Compliance Badge -->
+  <div class="card" style="padding:16px 20px;background:var(--bg-surface);border:1px solid var(--accent);border-radius:var(--radius-lg);text-align:center;">
+    <span style="font-size:12px;font-weight:600;color:var(--accent);">OpenENV 0.1 Compliant</span>
+    <span style="font-size:12px;color:var(--text-muted);margin-left:12px;">Gymnasium-compatible | /reset /step /state /health /spec</span>
+    <a href="/api-explorer" style="font-size:12px;color:var(--accent);margin-left:12px;text-decoration:underline;">Explore API →</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TOPIC_NAMES = {{ topic_names | tojson }};
+let isRunning = false;
+
+function getMasteryColor(val) {
+  if (val < 0.2) return 'var(--progress-track)';
+  if (val < 0.4) return '#E8A87C';
+  if (val < 0.6) return '#D4A5E5';
+  if (val < 0.8) return 'var(--cobalt-light)';
+  return 'var(--accent)';
+}
+
+function updateMasteryGrid(mastery) {
+  for (let i = 0; i < mastery.length; i++) {
+    const cell = document.getElementById('mastery-cell-' + i);
+    if (!cell) continue;
+    const val = mastery[i];
+    cell.style.background = getMasteryColor(val);
+    cell.style.color = val > 0.5 ? '#fff' : 'var(--text-primary)';
+    cell.querySelector('.mastery-val').textContent = Math.round(val * 100) + '%';
+  }
+}
+
+function updateRewardBars(components, maxReward) {
+  document.querySelectorAll('.reward-component').forEach(el => {
+    const key = el.dataset.key;
+    const val = components[key] || 0;
+    const fill = el.querySelector('.reward-fill');
+    const valEl = el.querySelector('.reward-val');
+    const pct = Math.min(100, Math.abs(val) / Math.max(maxReward, 1) * 100);
+    fill.style.width = pct + '%';
+    valEl.textContent = (val >= 0 ? '+' : '') + val.toFixed(1);
+  });
+}
+
+function addLogEntry(step) {
+  const log = document.getElementById('agent-log');
+  const color = step.correct === true ? 'var(--accent)' : step.correct === false ? '#E74C3C' : 'var(--text-muted)';
+  const icon = step.assessed ? '📝' : (step.correct ? '✓' : '✗');
+  const entry = document.createElement('div');
+  entry.style.cssText = 'padding:6px 0;border-bottom:1px solid var(--border-subtle);';
+  entry.innerHTML = `
+    <span style="color:var(--text-muted);font-size:10px;">Step ${step.step}</span>
+    <span style="color:${color};font-weight:600;margin-left:6px;">${icon}</span>
+    <span style="color:var(--text-primary);font-size:12px;margin-left:4px;">${step.topic_name}</span>
+    <span style="color:var(--text-muted);font-size:11px;margin-left:4px;">D${step.difficulty}</span>
+    <span style="color:var(--accent);font-size:11px;float:right;">R: ${step.reward >= 0 ? '+' : ''}${step.reward}</span>
+  `;
+  // Prepend so latest is on top
+  if (log.firstChild) log.insertBefore(entry, log.firstChild);
+  else log.appendChild(entry);
+}
+
+async function resetSimulation() {
+  isRunning = false;
+  document.getElementById('stat-step').textContent = '0';
+  document.getElementById('stat-mastered').textContent = '0 / 40';
+  document.getElementById('stat-completion').textContent = '0%';
+  document.getElementById('stat-engagement').textContent = '80%';
+  document.getElementById('stat-reward').textContent = '0.0';
+  document.getElementById('agent-log').innerHTML = '<div style="color:var(--text-muted);font-style:italic;">Run an episode to see agent decisions...</div>';
+
+  // Reset mastery grid
+  for (let i = 0; i < 40; i++) {
+    const cell = document.getElementById('mastery-cell-' + i);
+    if (cell) {
+      cell.style.background = 'var(--progress-track)';
+      cell.style.color = 'var(--text-muted)';
+      cell.querySelector('.mastery-val').textContent = '0%';
+    }
+  }
+
+  // Reset reward bars
+  document.querySelectorAll('.reward-fill').forEach(f => f.style.width = '0%');
+  document.querySelectorAll('.reward-val').forEach(v => v.textContent = '+0.0');
+
+  // Reset the server env too
+  await fetch('/api/reset', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({})});
+}
+
+async function runFullEpisode() {
+  if (isRunning) return;
+  isRunning = true;
+
+  const btn = document.getElementById('btn-run-episode');
+  btn.textContent = 'Running...';
+  btn.style.opacity = '0.6';
+
+  const archetype = document.getElementById('sim-archetype').value;
+  const maxSteps = parseInt(document.getElementById('sim-steps').value) || 100;
+
+  // Clear log
+  document.getElementById('agent-log').innerHTML = '';
+
+  try {
+    const resp = await fetch('/api/simulation/run-episode', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({archetype: archetype, max_steps: maxSteps}),
+    });
+    const data = await resp.json();
+
+    // Animate steps with delay
+    const steps = data.steps;
+    let cumulativeReward = {};
+
+    for (let i = 0; i < steps.length; i++) {
+      if (!isRunning) break;
+
+      const s = steps[i];
+      // Accumulate reward components
+      for (const [k, v] of Object.entries(s.reward_components)) {
+        cumulativeReward[k] = (cumulativeReward[k] || 0) + v;
+      }
+
+      // Update stats
+      document.getElementById('stat-step').textContent = s.step;
+      document.getElementById('stat-mastered').textContent = s.topics_mastered + ' / 40';
+      document.getElementById('stat-completion').textContent = Math.round(s.completion_rate * 100) + '%';
+      document.getElementById('stat-engagement').textContent = Math.round(s.engagement * 100) + '%';
+      document.getElementById('stat-reward').textContent = s.cumulative_reward.toFixed(1);
+
+      // Update mastery grid
+      updateMasteryGrid(s.mastery);
+
+      // Update reward bars
+      const maxR = Math.max(...Object.values(cumulativeReward).map(Math.abs), 1);
+      updateRewardBars(cumulativeReward, maxR);
+
+      // Add log entry (only every few steps to avoid flooding)
+      if (i < 20 || i % 5 === 0 || i === steps.length - 1) {
+        addLogEntry(s);
+      }
+
+      // Small delay for animation effect
+      if (steps.length <= 50 || i % 2 === 0) {
+        await new Promise(r => setTimeout(r, steps.length > 100 ? 30 : 80));
+      }
+    }
+
+    // Final summary log entry
+    const ep = data.episode;
+    const summary = document.createElement('div');
+    summary.style.cssText = 'padding:10px;margin-top:8px;background:var(--cobalt-muted);border-radius:var(--radius-sm);border:1px solid var(--accent);';
+    summary.innerHTML = `
+      <div style="font-size:12px;font-weight:600;color:var(--accent);">Episode Complete</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">
+        ${ep.archetype} student | ${ep.total_steps} steps | ${ep.topics_mastered} topics mastered |
+        ${Math.round(ep.completion_rate * 100)}% complete | Reward: ${ep.final_reward}
+      </div>
+    `;
+    document.getElementById('agent-log').insertBefore(summary, document.getElementById('agent-log').firstChild);
+
+  } catch(err) {
+    console.error('Simulation error:', err);
+  }
+
+  isRunning = false;
+  btn.textContent = 'Run Full Episode';
+  btn.style.opacity = '1';
+}
+</script>
+{% endblock %}

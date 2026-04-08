@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}API Explorer — Epoch.ai{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <div class="page-header" style="margin-bottom:24px;">
+    <h1 style="color:var(--text-heading);font-size:24px;font-weight:700;">
+      <span style="color:var(--accent);">OpenENV</span> API Explorer
+    </h1>
+    <p style="color:var(--text-secondary);margin-top:4px;font-size:14px;">
+      Interactive playground for the OpenENV 0.1 HTTP specification. Test every endpoint live.
+    </p>
+  </div>
+
+  <!-- Spec Overview -->
+  <div class="card" style="padding:20px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Environment</div>
+        <div style="font-size:18px;font-weight:600;color:var(--accent);margin-top:2px;">{{ spec.name }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Version</div>
+        <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-top:2px;">{{ spec.version }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">License</div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-top:2px;">{{ spec.license }}</div>
+      </div>
+      <div>
+        <span style="display:inline-block;padding:4px 12px;background:var(--accent);color:var(--text-on-cobalt);border-radius:var(--radius-pill);font-size:11px;font-weight:600;">OpenENV 0.1 Compliant</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:4px;">Tags</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        {% for tag in spec.tags %}
+        <span style="padding:3px 10px;border:1px solid var(--border-default);border-radius:var(--radius-pill);font-size:11px;color:var(--text-secondary);">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Endpoint Cards -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- GET /health -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="padding:3px 10px;background:var(--cobalt-muted);color:var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;">GET</span>
+        <code style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);font-weight:500;">/health</code>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">Health check — returns env status and current step</span>
+      </div>
+      <button onclick="callEndpoint('GET', '/health', null, 'health-result')"
+              style="padding:8px 20px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;border:none;cursor:pointer;">
+        Send Request
+      </button>
+      <pre id="health-result" style="margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--text-primary);overflow-x:auto;display:none;"></pre>
+    </div>
+
+    <!-- GET /spec -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="padding:3px 10px;background:var(--cobalt-muted);color:var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;">GET</span>
+        <code style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);font-weight:500;">/spec</code>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">OpenENV manifest — observation/action spaces, metadata</span>
+      </div>
+      <button onclick="callEndpoint('GET', '/spec', null, 'spec-result')"
+              style="padding:8px 20px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;border:none;cursor:pointer;">
+        Send Request
+      </button>
+      <pre id="spec-result" style="margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--text-primary);overflow-x:auto;display:none;max-height:300px;"></pre>
+    </div>
+
+    <!-- POST /api/reset -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="padding:3px 10px;background:var(--accent);color:var(--text-on-cobalt);border-radius:var(--radius-sm);font-size:12px;font-weight:600;">POST</span>
+        <code style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);font-weight:500;">/api/reset</code>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">Reset environment — returns initial observation</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);display:block;margin-bottom:4px;">Request Body</label>
+        <textarea id="reset-body" rows="3" style="width:100%;padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font-mono);font-size:12px;resize:vertical;">{"archetype": "steady", "seed": 42}</textarea>
+      </div>
+      <button onclick="callEndpoint('POST', '/api/reset', document.getElementById('reset-body').value, 'reset-result')"
+              style="padding:8px 20px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;border:none;cursor:pointer;">
+        Send Request
+      </button>
+      <pre id="reset-result" style="margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--text-primary);overflow-x:auto;display:none;max-height:300px;"></pre>
+    </div>
+
+    <!-- POST /api/step -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="padding:3px 10px;background:var(--accent);color:var(--text-on-cobalt);border-radius:var(--radius-sm);font-size:12px;font-weight:600;">POST</span>
+        <code style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);font-weight:500;">/api/step</code>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">Step environment — multi-agent action</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);display:block;margin-bottom:4px;">Request Body</label>
+        <textarea id="step-body" rows="3" style="width:100%;padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-default);background:var(--bg-surface);color:var(--text-primary);font-family:var(--font-mono);font-size:12px;resize:vertical;">{"action": {"topic": 0, "difficulty": 1, "assess": 0}}</textarea>
+      </div>
+      <button onclick="callEndpoint('POST', '/api/step', document.getElementById('step-body').value, 'step-result')"
+              style="padding:8px 20px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;border:none;cursor:pointer;">
+        Send Request
+      </button>
+      <pre id="step-result" style="margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--text-primary);overflow-x:auto;display:none;max-height:300px;"></pre>
+    </div>
+
+    <!-- GET /api/state -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="padding:3px 10px;background:var(--cobalt-muted);color:var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;">GET</span>
+        <code style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);font-weight:500;">/api/state</code>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">Full serialized environment state (JSON-safe)</span>
+      </div>
+      <button onclick="callEndpoint('GET', '/api/state', null, 'state-result')"
+              style="padding:8px 20px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;border:none;cursor:pointer;">
+        Send Request
+      </button>
+      <pre id="state-result" style="margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--text-primary);overflow-x:auto;display:none;max-height:400px;"></pre>
+    </div>
+
+    <!-- GET /api/agent/recommend -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--accent);border-radius:var(--radius-lg);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="padding:3px 10px;background:var(--cobalt-muted);color:var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;">GET</span>
+        <code style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);font-weight:500;">/api/agent/recommend</code>
+        <span style="padding:2px 8px;background:var(--accent);color:var(--text-on-cobalt);border-radius:var(--radius-pill);font-size:10px;font-weight:600;">NEW</span>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">AI agents recommend next action for your profile</span>
+      </div>
+      <button onclick="callEndpoint('GET', '/api/agent/recommend', null, 'recommend-result')"
+              style="padding:8px 20px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;border:none;cursor:pointer;">
+        Get AI Recommendation
+      </button>
+      <pre id="recommend-result" style="margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--text-primary);overflow-x:auto;display:none;max-height:400px;"></pre>
+    </div>
+
+    <!-- GET /api/reward-breakdown -->
+    <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="padding:3px 10px;background:var(--cobalt-muted);color:var(--accent);border-radius:var(--radius-sm);font-size:12px;font-weight:600;">GET</span>
+        <code style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);font-weight:500;">/api/reward-breakdown</code>
+        <span style="padding:2px 8px;background:var(--accent);color:var(--text-on-cobalt);border-radius:var(--radius-pill);font-size:10px;font-weight:600;">NEW</span>
+        <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">Reward function decomposition from current episode</span>
+      </div>
+      <button onclick="callEndpoint('GET', '/api/reward-breakdown', null, 'reward-result')"
+              style="padding:8px 20px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;border:none;cursor:pointer;">
+        Send Request
+      </button>
+      <pre id="reward-result" style="margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:12px;color:var(--text-primary);overflow-x:auto;display:none;max-height:300px;"></pre>
+    </div>
+
+  </div>
+
+  <!-- Raw Spec JSON -->
+  <div class="card" style="padding:20px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:var(--radius-lg);margin-top:20px;">
+    <div style="font-size:13px;font-weight:600;color:var(--text-heading);margin-bottom:12px;">openenv_spec.json (raw)</div>
+    <pre style="padding:12px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);overflow-x:auto;max-height:300px;">{{ spec_json }}</pre>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function callEndpoint(method, url, body, resultId) {
+  const resultEl = document.getElementById(resultId);
+  resultEl.style.display = 'block';
+  resultEl.textContent = 'Loading...';
+  resultEl.style.color = 'var(--text-muted)';
+
+  try {
+    const opts = {method: method, headers: {'Content-Type': 'application/json'}};
+    if (body && method === 'POST') opts.body = body;
+    const resp = await fetch(url, opts);
+    const data = await resp.json();
+    resultEl.textContent = JSON.stringify(data, null, 2);
+    resultEl.style.color = 'var(--text-primary)';
+
+    // Syntax highlight the keys
+    resultEl.innerHTML = resultEl.textContent
+      .replace(/"([^"]+)":/g, '<span style="color:var(--accent);">"$1"</span>:')
+      .replace(/: "([^"]*)"/g, ': <span style="color:#A5D6A7;">"$1"</span>')
+      .replace(/: (\d+\.?\d*)/g, ': <span style="color:#FFB74D;">$1</span>')
+      .replace(/: (true|false)/g, ': <span style="color:#81D4FA;">$1</span>')
+      .replace(/: (null)/g, ': <span style="color:var(--text-muted);">$1</span>');
+  } catch(err) {
+    resultEl.textContent = 'Error: ' + err.message;
+    resultEl.style.color = '#E74C3C';
+  }
+}
+</script>
+{% endblock %}

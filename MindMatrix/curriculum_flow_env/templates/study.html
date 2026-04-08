@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} — Study{% endblock %}
+{% block content %}
+
+<!-- Breadcrumb -->
+<div style="max-width:1140px;margin:0 auto;padding:12px 24px 0;">
+  <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);">
+    <a href="/learning" style="color:var(--text-secondary);text-decoration:none;">Learning Path</a>
+    <span style="margin:0 2px;opacity:0.5;">/</span>
+    <a href="/learning?group={{ topic.group }}" style="color:var(--text-secondary);text-decoration:none;">{{ topic.group }}</a>
+    <span style="margin:0 2px;opacity:0.5;">/</span>
+    <span style="color:var(--accent);font-weight:600;">{{ topic.title }}</span>
+  </div>
+</div>
+
+
+<!-- Main Layout: Sidebar + Content -->
+<div class="study-layout">
+
+  <!-- LEFT SIDEBAR with scrollable topics -->
+  <aside class="study-sidebar">
+    <div class="study-sidebar-inner">
+      <div class="study-sidebar-header">{{ topic.group }}</div>
+      <nav class="study-topic-list">
+        {% for st in sidebar_topics %}
+        <a href="/learning/study?topic={{ st.id }}"
+           class="study-topic-link {% if st.is_current %}active{% endif %}">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">{{ st.display_name }}</span>
+        </a>
+        {% endfor %}
+      </nav>
+      <!-- sidebar nav is sufficient -->
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <div style="flex:1;min-width:0;">
+
+    <!-- Topic Title + AI Badge -->
+    <div style="margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h1 style="font-size:28px;font-weight:800;color:var(--text-heading);margin:0;line-height:1.2;letter-spacing:-0.03em;">{{ topic.title }}</h1>
+        <div class="study-ai-badge" title="Difficulty set by Difficulty Adapter agent based on your mastery level">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/></svg>
+          AI Difficulty {{ agent_difficulty }}/5
+        </div>
+        <div class="study-mastery-badge">{{ mastery_pct }}% mastery</div>
+      </div>
+      <p class="topic-meta-inline">
+        {{ topic.group }} &middot; {{ sidebar_topics|length }} topics in category &middot; Agent-recommended
+      </p>
+      <p style="font-size:15px;line-height:1.75;color:var(--text-secondary);margin:0;">{{ topic.overview }}</p>
+    </div>
+
+    <!-- CHAPTERS (new 5-chapter structure) -->
+    {% if topic.chapters %}
+    {% for chapter in topic.chapters %}
+    <section class="study-chapter" id="chapter-{{ loop.index }}" style="margin-bottom:36px;">
+      <div class="study-chapter-header">
+        <span class="study-ch-num">{{ loop.index }}</span>
+        <h2 class="study-ch-title">{{ chapter.title }}</h2>
+      </div>
+      <div class="study-ch-content">
+        {{ chapter.content | replace('\n\n', '</p><p style="font-size:14px;color:var(--text-secondary);line-height:1.8;margin:0 0 12px;">') | safe }}
+      </div>
+      {% if chapter.key_points %}
+      <div class="study-ch-keypoints">
+        <h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin:0 0 8px;">Key Takeaways</h4>
+        <ul style="list-style:none;padding:0;margin:0;">
+          {% for pt in chapter.key_points %}
+          <li style="padding:5px 0;font-size:13px;color:var(--text-secondary);line-height:1.5;display:flex;gap:8px;">
+            <span style="color:var(--accent);font-weight:700;flex-shrink:0;">&#10003;</span>
+            <span>{{ pt }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if chapter.examples %}
+      <div style="margin-top:14px;">
+        {% for ex in chapter.examples %}
+        <div style="margin-bottom:10px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border-default);">
+          <div style="padding:12px 16px;background:var(--bg-surface);">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin-bottom:4px;">Example {{ loop.index }}</div>
+            <p style="font-size:13px;color:var(--text-primary);font-weight:500;margin:0;line-height:1.5;">{{ ex.question }}</p>
+          </div>
+          <div style="padding:6px 16px 12px;">
+            <button class="reveal-btn" data-revealed="false" onclick="(function(btn){var sol=btn.nextElementSibling;var shown=btn.dataset.revealed==='true';sol.hidden=shown;btn.dataset.revealed=String(!shown);btn.textContent=shown?'Reveal To Check':'Hide Answer';})(this)">Reveal To Check</button>
+            <div class="problem-solution" hidden>
+              <p style="margin:0;white-space:pre-wrap;font-size:13px;">{{ ex.solution }}</p>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Chapter Quiz (inline at end of chapter) -->
+      <div class="study-ch-quiz {% if loop.index in passed_chapters %}ch-quiz-passed{% endif %}">
+        {% if loop.index in passed_chapters %}
+        <div class="ch-quiz-status ch-quiz-done">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Chapter {{ loop.index }} Quiz — Passed ({{ passed_chapters[loop.index] }}%)</span>
+        </div>
+        {% else %}
+        <a href="/quiz/start?topic={{ topic_id }}&count=5&chapter={{ loop.index }}" class="ch-quiz-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Take Chapter {{ loop.index }} Quiz</span>
+          <span class="ch-quiz-meta">5 questions &middot; 80% to pass</span>
+        </a>
+        {% endif %}
+      </div>
+    </section>
+    {% endfor %}
+    {% endif %}
+
+    <!-- FALLBACK: Old format (key_concepts) if no chapters -->
+    {% if not topic.chapters and topic.key_concepts %}
+    <section style="margin-bottom:32px;">
+      <h2 style="font-size:20px;font-weight:700;color:var(--text-heading);margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid rgba(74,138,255,0.15);">Key Concepts</h2>
+      {% for concept in topic.key_concepts %}
+      <div class="study-concept-card">
+        <h3 style="font-size:15px;font-weight:700;color:var(--text-heading);margin:0 0 6px;">{{ concept.name }}</h3>
+        <p style="font-size:13.5px;color:var(--text-secondary);line-height:1.7;margin:0;">{{ concept.explanation }}</p>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- IMPORTANT FORMULAS -->
+    {% if topic.formulas %}
+    <section style="margin-bottom:32px;">
+      <h2 style="font-size:20px;font-weight:700;color:var(--text-heading);margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid rgba(74,138,255,0.15);">Important Formulas</h2>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for formula in topic.formulas %}
+        <div style="padding:14px 18px;background:var(--bg-card);color:var(--text-primary);font-family:var(--font-mono);font-size:14px;border-radius:var(--radius-sm);border-left:4px solid var(--accent);line-height:1.6;white-space:pre-wrap;word-break:break-word;border:1px solid var(--border-subtle);">{{ formula }}</div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- PRO TIPS -->
+    {% if topic.tips %}
+    <section style="margin-bottom:32px;">
+      <h2 style="font-size:20px;font-weight:700;color:var(--text-heading);margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid rgba(74,138,255,0.15);letter-spacing:-0.02em;">Pro Tips</h2>
+      <div style="padding:18px 20px;background:var(--bg-card);border:1px solid var(--border-subtle);border-left:4px solid var(--accent);border-radius:0 var(--radius-md) var(--radius-md) 0;">
+        <ul style="list-style:none;padding:0;margin:0;">
+          {% for tip in topic.tips %}
+          <li style="padding:6px 0;font-size:13.5px;color:var(--text-secondary);line-height:1.65;display:flex;align-items:baseline;gap:10px;{% if not loop.last %}border-bottom:1px solid var(--border-subtle);margin-bottom:6px;padding-bottom:10px;{% endif %}">
+            <span style="color:var(--accent);font-weight:700;font-size:16px;line-height:1;flex-shrink:0;">&#8250;</span>
+            <span>{{ tip }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- Main Topic Quiz (unlocks after all 5 chapter quizzes passed) -->
+    <section style="margin-bottom:32px;">
+      <h2 style="font-size:20px;font-weight:700;color:var(--text-heading);margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid rgba(74,138,255,0.15);letter-spacing:-0.02em;">Main Assessment</h2>
+
+      <!-- Progress indicator -->
+      <div class="main-quiz-progress">
+        <div class="mqp-bar">
+          {% for i in range(1, 6) %}
+          <div class="mqp-dot {% if i in passed_chapters %}mqp-done{% endif %}" title="Chapter {{ i }}{% if i in passed_chapters %} — Passed{% else %} — Not passed{% endif %}">{{ i }}</div>
+          {% endfor %}
+        </div>
+        <span class="mqp-label">{{ passed_chapters|length }}/5 chapter quizzes passed</span>
+      </div>
+
+      <div class="study-quiz-grid">
+        {% if main_quiz_unlocked %}
+        <a href="/quiz/start?topic={{ topic_id }}&count=10" class="study-quiz-card study-quiz-main">
+          <div class="sqc-num sqc-main-star">
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+              <polygon points="20,3 24.9,14.5 37.5,15.8 28,24.2 30.5,36.7 20,30.8 9.5,36.7 12,24.2 2.5,15.8 15.1,14.5" fill="#F59E0B" stroke="#D97706" stroke-width="1"/>
+              <text x="20" y="22" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="800" fill="#7C2D12" font-family="Inter, sans-serif">?</text>
+            </svg>
+          </div>
+          <div class="sqc-info">
+            <span class="sqc-title">Main Topic Quiz — Unlocked</span>
+            <span class="sqc-meta">10 questions &middot; 80% to pass &middot; Updates mastery</span>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        {% else %}
+        <div class="study-quiz-card study-quiz-locked">
+          <div class="sqc-num sqc-locked-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="sqc-info">
+            <span class="sqc-title" style="color:var(--text-muted);">Main Topic Quiz — Locked</span>
+            <span class="sqc-meta">Pass all 5 chapter quizzes to unlock ({{ 5 - passed_chapters|length }} remaining)</span>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- AI Footer -->
+    <div style="text-align:center;padding:16px 0 0;border-top:1px solid var(--border-subtle);font-size:11px;color:var(--text-muted);">
+      Content calibrated by <span style="color:var(--accent);font-weight:600;">OpenENV Difficulty Adapter</span>
+      &middot; 80% pass rate required &middot; Mastery tracked via <span style="color:var(--accent);font-weight:600;">Ebbinghaus Forgetting Curve</span>
+    </div>
+
+  </div><!-- end main content -->
+</div><!-- end layout flex -->
+
+
+{% endblock %}

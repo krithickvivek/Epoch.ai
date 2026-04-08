@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Quiz Review — Epoch.ai{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="qr-header reveal">
+        <div>
+            <h1 class="page-header">Quiz Review</h1>
+            <p class="text-secondary">Review your past quiz performance and retake quizzes to improve.</p>
+        </div>
+        <div class="qr-header-stats">
+            <div class="qr-stat">
+                <span class="qr-stat-num" style="color:var(--accent);">{{ total_quizzes }}</span>
+                <span class="qr-stat-lbl">Total Attempts</span>
+            </div>
+            <div class="qr-stat">
+                <span class="qr-stat-num" style="color:var(--accent);">{{ reviews|length }}</span>
+                <span class="qr-stat-lbl">Topics Attempted</span>
+            </div>
+        </div>
+    </div>
+
+    {% if reviews %}
+    <div class="qr-grid">
+        {% for review in reviews %}
+        <div class="qr-card reveal reveal-delay-{{ loop.index % 4 + 1 }}">
+            <div class="qr-card-top">
+                <div class="qr-card-info">
+                    <span class="qr-card-group">{{ review.group }}</span>
+                    <h3 class="qr-card-title">{{ review.topic_name }}</h3>
+                    <div class="qr-card-meta">
+                        <span>{{ review.total_attempts }} attempt{{ 's' if review.total_attempts != 1 }}</span>
+                        <span class="qr-meta-dot"></span>
+                        <span>Mastery: {{ review.mastery }}%</span>
+                    </div>
+                </div>
+                <div class="qr-card-ring" style="--pct: {{ review.best_score }}">
+                    <svg viewBox="0 0 44 44">
+                        <circle cx="22" cy="22" r="18" fill="none" stroke="var(--progress-track)" stroke-width="3.5"/>
+                        <circle cx="22" cy="22" r="18" fill="none"
+                            stroke="{% if review.best_score >= 80 %}#22c55e{% elif review.best_score >= 50 %}#f59e0b{% else %}#ef4444{% endif %}"
+                            stroke-width="3.5" stroke-linecap="round"
+                            stroke-dasharray="{{ (review.best_score * 1.131)|round(1) }} 113.1"
+                            transform="rotate(-90 22 22)"/>
+                    </svg>
+                    <span class="qr-ring-text">{{ review.best_score }}%</span>
+                </div>
+            </div>
+
+            <div class="qr-scores-row">
+                <div class="qr-score-chip {% if review.best_score >= 80 %}chip-green{% elif review.best_score >= 50 %}chip-orange{% else %}chip-red{% endif %}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                    Best: {{ review.best_score }}%
+                </div>
+                <div class="qr-score-chip chip-blue">
+                    Latest: {{ review.latest_score }}%
+                </div>
+                {% if review.total_attempts > 1 and review.latest_score < review.best_score %}
+                <div class="qr-trend qr-trend-down">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 17 17 7"/><polyline points="17 17 17 7 7 7"/></svg>
+                </div>
+                {% elif review.total_attempts > 1 and review.latest_score >= review.best_score %}
+                <div class="qr-trend qr-trend-up">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 7 7 17"/><polyline points="7 7 7 17 17 17"/></svg>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Attempt History -->
+            <div class="qr-attempts">
+                <div class="qr-attempts-label">Attempt History</div>
+                {% for attempt in review.attempts %}
+                <div class="qr-attempt-row">
+                    <span class="qr-attempt-date">{{ attempt.date[:10] if attempt.date else '—' }}</span>
+                    <span class="qr-attempt-result">{{ attempt.correct }}/{{ attempt.total }}</span>
+                    <span class="badge {% if attempt.score >= 80 %}badge-green{% elif attempt.score >= 50 %}badge-orange{% else %}badge-red{% endif %}" style="font-size:11px;">
+                        {{ attempt.score }}%
+                    </span>
+                    {% if attempt.results %}
+                    <button class="qr-detail-toggle" onclick="toggleDetail(this)" title="View questions">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    {% endif %}
+                </div>
+                {% if attempt.results %}
+                <div class="qr-detail-panel" style="display:none;">
+                    {% for r in attempt.results %}
+                    <div class="qr-question-item {% if r.is_correct %}qr-q-correct{% else %}qr-q-wrong{% endif %}">
+                        <div class="qr-q-header">
+                            <span class="qr-q-icon">
+                                {% if r.is_correct %}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                {% else %}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                {% endif %}
+                            </span>
+                            <span class="qr-q-text">{{ r.question }}</span>
+                        </div>
+                        <div class="qr-q-answers">
+                            <div class="qr-q-ans">
+                                <span class="qr-q-ans-label">Your answer:</span>
+                                <span class="{% if r.is_correct %}text-green{% else %}text-red{% endif %}">{{ r.your_answer }}</span>
+                            </div>
+                            {% if not r.is_correct %}
+                            <div class="qr-q-ans">
+                                <span class="qr-q-ans-label">Correct answer:</span>
+                                <span class="text-green">{{ r.correct_answer }}</span>
+                            </div>
+                            {% endif %}
+                            {% if r.explanation %}
+                            <div class="qr-q-explanation">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                {{ r.explanation }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="qr-card-actions">
+                <a href="/quiz/start?topic={{ review.topic_id }}&count=5" class="btn-primary btn-sm">
+                    Retake Quiz
+                </a>
+                <a href="/learning/study?topic={{ review.topic_id }}" class="btn-secondary btn-sm">
+                    Study Topic
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="qr-empty reveal">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.3">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <h3>No quizzes taken yet</h3>
+        <p class="text-secondary">Take your first quiz to start tracking your progress.</p>
+        <a href="/quiz" class="btn-primary btn-lg" style="margin-top:16px;">Take a Quiz</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleDetail(btn) {
+    const panel = btn.closest('.qr-attempt-row').nextElementSibling;
+    if (!panel || !panel.classList.contains('qr-detail-panel')) return;
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    btn.classList.toggle('qr-detail-open', !open);
+}
+</script>
+{% endblock %}

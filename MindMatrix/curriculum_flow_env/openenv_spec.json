@@ -1,0 +1,38 @@
+{
+  "name": "CurriculumFlowENV",
+  "version": "0.1.0",
+  "description": "Multi-agent RL for adaptive learning path optimization. Three agents (topic sequencer, difficulty adapter, assessment timer) jointly personalize education for simulated students with Ebbinghaus forgetting curves.",
+  "tags": ["education", "multi-agent", "adaptive-learning", "curriculum", "personalization"],
+  "observation_space": {
+    "type": "Dict",
+    "spaces": {
+      "mastery": "Box(40,)",
+      "engagement": "Box(1,)",
+      "recent_accuracy": "Box(10,)",
+      "time_since_review": "Box(40,)",
+      "current_topic": "Discrete(40)",
+      "unlocked_mask": "MultiBinary(40)"
+    }
+  },
+  "action_space": {
+    "type": "Dict",
+    "spaces": {
+      "topic": "Discrete(40)",
+      "difficulty": "Discrete(5)",
+      "assess": "Discrete(2)"
+    }
+  },
+  "reward_range": [-100, 100],
+  "max_episode_steps": 200,
+  "student_archetypes": ["fast", "steady", "struggling", "bursty", "anxious"],
+  "authors": ["your-hf-username"],
+  "license": "Apache-2.0",
+  "paper_reference": "Ebbinghaus (1885) forgetting curve · Zone of Proximal Development (Vygotsky)",
+  "endpoints": {
+    "reset": "/reset",
+    "step": "/step",
+    "state": "/state",
+    "health": "/health",
+    "spec": "/spec"
+  }
+}

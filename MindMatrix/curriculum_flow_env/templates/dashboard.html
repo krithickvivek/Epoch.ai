@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Epoch.ai{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-header">Dashboard</h1>
+
+    <!-- AI Agent Recommendation Banner -->
+    <div id="ai-banner" class="card" style="margin-bottom:20px;padding:16px 20px;background:var(--cobalt-muted);border:1.5px solid var(--accent);border-radius:var(--radius-lg);display:none;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span style="font-size:18px;">🤖</span>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);">OpenENV AI Recommendation</div>
+                <div id="ai-recommendation" style="font-size:13px;color:var(--text-primary);margin-top:2px;">Loading...</div>
+                <div id="ai-agents-detail" style="font-size:11px;color:var(--text-secondary);margin-top:4px;"></div>
+            </div>
+            <a id="ai-action-link" href="/learning" style="padding:8px 16px;border-radius:var(--radius-md);background:var(--accent);color:var(--text-on-cobalt);font-weight:600;font-size:12px;text-decoration:none;white-space:nowrap;">
+                Study Now →
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number gradient-text">{{ topics_mastered }}</span>
+            <span class="stat-label">Topics Mastered</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" style="color: var(--accent);">{{ quizzes_taken }}</span>
+            <span class="stat-label">Quizzes Taken</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" style="color: var(--accent);">{{ avg_quiz_score }}%</span>
+            <span class="stat-label">Avg Quiz Score</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" style="color: var(--accent);">{{ completion_pct }}%</span>
+            <span class="stat-label">Completion</span>
+        </div>
+    </div>
+
+    <div class="two-col" style="margin-top: 24px;">
+        <!-- OpenENV Agent Status -->
+        <div class="card">
+            <h3 style="display:flex;align-items:center;gap:8px;">
+                <span style="color:var(--accent);">🎯</span> AI Agents (OpenENV)
+            </h3>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
+                Three RL agents continuously analyze your learning data to optimize your path.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <div style="padding:10px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-default);">
+                    <div style="font-size:11px;font-weight:600;color:var(--accent);">Topic Sequencer</div>
+                    <div id="agent-sequencer" style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Analyzing your mastery gaps...</div>
+                </div>
+                <div style="padding:10px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-default);">
+                    <div style="font-size:11px;font-weight:600;color:var(--accent);">Difficulty Adapter</div>
+                    <div id="agent-difficulty" style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Calibrating to your level...</div>
+                </div>
+                <div style="padding:10px;border-radius:var(--radius-md);background:var(--bg-surface);border:1px solid var(--border-default);">
+                    <div style="font-size:11px;font-weight:600;color:var(--accent);">Assessment Timer</div>
+                    <div id="agent-assessment" style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Monitoring forgetting curves...</div>
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <a href="/simulation" style="font-size:12px;color:var(--accent);text-decoration:underline;">Watch agents run live →</a>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <h3>Quick Actions</h3>
+            <div class="quick-actions">
+                <a href="/quiz" class="action-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    Take Quiz
+                </a>
+                <a href="/simulation" class="action-btn" style="border-color:var(--accent);color:var(--accent);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    AI Simulation
+                </a>
+                <a href="/growth" class="action-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                    View Growth
+                </a>
+                <a href="/api-explorer" class="action-btn" style="border-color:var(--accent);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    API Explorer
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- OpenENV Badge -->
+    <div style="margin-top:24px;text-align:center;padding:12px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);">
+        <span style="font-size:11px;font-weight:600;color:var(--accent);">Powered by OpenENV 0.1</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">Gymnasium Environment + Multi-Agent RL + Ebbinghaus Forgetting Curves</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Fetch AI recommendations from OpenENV agents on page load
+(async function() {
+    try {
+        const resp = await fetch('/api/agent/recommend');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const agents = data.agents;
+
+        // Show banner
+        const banner = document.getElementById('ai-banner');
+        banner.style.display = 'block';
+
+        const topicName = agents.topic_sequencer.topic_name;
+        const difficulty = agents.difficulty_adapter.action;
+        const shouldAssess = agents.assessment_timer.action === 1;
+
+        let recText = shouldAssess
+            ? `Time to take a quiz on <strong>${topicName}</strong> — the Assessment Timer agent detected knowledge decay.`
+            : `Study <strong>${topicName}</strong> at difficulty ${difficulty}/5 — the Topic Sequencer identified this as your biggest growth opportunity.`;
+
+        document.getElementById('ai-recommendation').innerHTML = recText;
+        document.getElementById('ai-agents-detail').innerHTML =
+            `Topic Sequencer: ${agents.topic_sequencer.reason} · ` +
+            `Difficulty: ${agents.difficulty_adapter.reason} · ` +
+            `Assessment: ${agents.assessment_timer.reason}`;
+
+        if (shouldAssess) {
+            const link = document.getElementById('ai-action-link');
+            link.href = '/quiz/start?topic=' + agents.topic_sequencer.action + '&count=5';
+            link.textContent = 'Take Quiz →';
+        } else {
+            document.getElementById('ai-action-link').href = '/learning/study?topic=' + agents.topic_sequencer.action;
+        }
+
+        // Update agent panels
+        document.getElementById('agent-sequencer').textContent = agents.topic_sequencer.reason;
+        document.getElementById('agent-difficulty').textContent = agents.difficulty_adapter.reason;
+        document.getElementById('agent-assessment').textContent = agents.assessment_timer.reason;
+
+    } catch(e) { console.log('Agent recommendation not available:', e); }
+})();
+</script>
+{% endblock %}

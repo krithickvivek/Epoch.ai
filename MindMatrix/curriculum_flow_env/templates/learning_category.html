@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ category.display_name }} — Learning — Epoch.ai{% endblock %}
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <div class="lc-breadcrumb reveal">
+        <a href="/home">Home</a>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <a href="/learning">Learning</a>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="lc-breadcrumb-current">{{ category.display_name }}</span>
+    </div>
+
+    <!-- Category Header -->
+    <div class="lc-header reveal">
+        <div>
+            <h1 class="page-header" style="margin-bottom:4px;">{{ category.display_name }}</h1>
+            <p class="text-secondary">{{ category.topics|length }} topics &middot; {{ category.mastered }}/{{ category.total }} completed</p>
+        </div>
+        <div class="lc-progress-pill">
+            <div class="lc-progress-bar-wrap">
+                <div class="lc-progress-fill" style="width:{{ category.pct }}%;background:{{ category.color }};"></div>
+            </div>
+            <span class="lc-progress-num">{{ category.pct }}%</span>
+        </div>
+    </div>
+
+    <!-- Search within category -->
+    <div class="lc-search reveal reveal-delay-1">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="lc-search" placeholder="Search topics in {{ category.display_name }}..." autocomplete="off">
+    </div>
+
+    <!-- Topic Grid -->
+    <div class="lc-topic-grid" id="lc-topic-grid">
+        {% for topic in category.topics %}
+        <div class="lc-topic-card reveal reveal-delay-{{ (loop.index % 4) + 1 }} {% if topic.locked %}lc-locked{% endif %}" data-name="{{ topic.display_name|lower }}">
+            <div class="lc-topic-top">
+                <h4 class="lc-topic-name">{{ topic.display_name }}</h4>
+                {% if topic.mastered %}
+                <span class="lc-status-dot lc-dot-green" title="Mastered"></span>
+                {% elif topic.mastery > 0 %}
+                <span class="lc-status-dot lc-dot-orange" title="In Progress"></span>
+                {% elif topic.locked %}
+                <span class="lc-status-dot lc-dot-red" title="Locked"></span>
+                {% else %}
+                <span class="lc-status-dot lc-dot-gray" title="Not Started"></span>
+                {% endif %}
+            </div>
+            <div class="lc-topic-meta">
+                <span class="lc-difficulty-dots">
+                    {% for i in range(topic.difficulty) %}<span class="lc-diff-on"></span>{% endfor %}{% for i in range(5 - topic.difficulty) %}<span class="lc-diff-off"></span>{% endfor %}
+                </span>
+                {% if topic.mastered %}
+                <span class="badge badge-green" style="font-size:10px;">Mastered</span>
+                {% elif topic.locked %}
+                <span class="badge badge-red" style="font-size:10px;">Locked</span>
+                {% elif topic.mastery > 0 %}
+                <span class="badge badge-orange" style="font-size:10px;">{{ (topic.mastery * 100)|int }}%</span>
+                {% else %}
+                <span class="badge badge-blue" style="font-size:10px;">New</span>
+                {% endif %}
+            </div>
+            {% if topic.locked %}
+            <p class="lc-locked-note">Requires: {{ topic.prereq_names }}</p>
+            {% else %}
+            <div class="lc-topic-actions">
+                <a href="/learning/study?topic={{ topic.id }}" class="btn-primary btn-sm" style="flex:1;text-align:center;">Study</a>
+                <a href="/quiz/start?topic={{ topic.id }}&count=5" class="btn-secondary btn-sm" style="flex:1;text-align:center;">Quiz</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+(function(){
+    var input = document.getElementById('lc-search');
+    var cards = document.querySelectorAll('.lc-topic-card');
+    if (!input) return;
+    input.addEventListener('input', function(){
+        var q = this.value.trim().toLowerCase();
+        cards.forEach(function(c){
+            c.style.display = (!q || c.dataset.name.indexOf(q) !== -1) ? '' : 'none';
+        });
+    });
+})();
+</script>
+{% endblock %}
