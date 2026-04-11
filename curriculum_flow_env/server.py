@@ -2226,6 +2226,7 @@ class ActionRequest(BaseModel):
     action: dict
 
 @app.post("/api/reset")
+@app.post("/reset")
 async def api_reset(req: ResetRequest):
     async with env_lock:
         options = {"archetype": req.archetype} if req.archetype else None
@@ -2233,6 +2234,7 @@ async def api_reset(req: ResetRequest):
         return {"observation": obs_to_json(obs), "info": info}
 
 @app.post("/api/step")
+@app.post("/step")
 async def api_step(req: ActionRequest):
     async with env_lock:
         obs, reward, terminated, truncated, info = env.step(req.action)
@@ -2242,6 +2244,7 @@ async def api_step(req: ActionRequest):
         }
 
 @app.get("/api/state")
+@app.get("/state")
 async def api_state():
     async with env_lock:
         return {"state": env.state()}
