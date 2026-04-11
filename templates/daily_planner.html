@@ -1,0 +1,1127 @@
+{% extends "base.html" %}
+{% block title %}Daily Planner — Epoch{% endblock %}
+{% block head %}
+<style>
+/* ── Daily Planner ────────────────────────────────────── */
+.planner-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.planner-header h1 { margin: 0; }
+.planner-date {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.planner-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+.planner-streak svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ── Stats Row ────────────────────────────────────────── */
+.planner-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.planner-stat-card {
+    padding: 16px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    text-align: center;
+}
+.planner-stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1.1;
+}
+.planner-stat-value.gradient-text {
+    background: linear-gradient(135deg, var(--accent), #00bcd4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.planner-stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+}
+
+/* ── Weekly Calendar ──────────────────────────────────── */
+.week-calendar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding: 6px 6px 6px 6px;
+}
+.week-day {
+    flex: 1;
+    min-width: 72px;
+    padding: 10px 8px;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    border: 2px solid var(--border-default);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    user-select: none;
+}
+.week-day:hover { border-color: var(--accent); }
+.week-day.active {
+    border-color: var(--accent) !important;
+    border-style: solid !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent),
+                0 0 16px color-mix(in srgb, var(--accent) 12%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-surface));
+}
+.week-day.active .week-day-num { color: var(--accent); }
+
+/* ── Week Day States: past / today / future ──────────── */
+.week-day.past-day {
+    opacity: 0.5;
+    background: color-mix(in srgb, var(--bg-surface) 60%, transparent);
+}
+.week-day.past-day .week-day-num { color: var(--text-secondary); }
+.week-day.past-day.active {
+    opacity: 1;
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-surface));
+}
+
+.week-day.today-day {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.week-day.today-day .week-day-num { color: var(--accent); font-weight: 800; }
+
+.week-day.future-day {
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--border-default) 50%, transparent);
+    opacity: 0.65;
+}
+.week-day.future-day.active {
+    opacity: 1;
+}
+.week-day.future-day:hover {
+    opacity: 0.85;
+}
+.week-day-name {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+}
+.week-day-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 4px 0 6px;
+}
+.week-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+.week-dot.green  { background: #4caf50; }
+.week-dot.yellow { background: #ff9800; }
+.week-dot.red    { background: #f44336; }
+.week-dot.gray   { background: var(--border-default); }
+
+/* ── Two-column layout ────────────────────────────────── */
+.planner-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    align-items: start;
+}
+@media (max-width: 960px) {
+    .planner-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Task List ────────────────────────────────────────── */
+.task-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.task-list { display: flex; flex-direction: column; gap: 8px; }
+
+.task-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    transition: border-color 0.15s, opacity 0.2s;
+}
+.task-card.completed {
+    opacity: 0.55;
+    border-color: #4caf50;
+}
+.task-card.completed .task-topic { text-decoration: line-through; }
+
+.task-check {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--border-default);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+    padding: 0;
+}
+.task-check:hover { border-color: var(--accent); }
+.task-check.checked {
+    background: #4caf50;
+    border-color: #4caf50;
+}
+.task-check.checked::after {
+    content: '';
+    display: block;
+    width: 6px; height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
+
+.task-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    font-weight: 700;
+}
+.task-icon.study    { background: #e3f2fd; color: #1565c0; }
+.task-icon.quiz     { background: #fce4ec; color: #c62828; }
+.task-icon.revision { background: #fff3e0; color: #e65100; }
+.task-icon.mock     { background: #e8f5e9; color: #2e7d32; }
+
+[data-theme="dark"] .task-icon.study    { background: rgba(21,101,192,0.2); }
+[data-theme="dark"] .task-icon.quiz     { background: rgba(198,40,40,0.2); }
+[data-theme="dark"] .task-icon.revision { background: rgba(230,81,0,0.2); }
+[data-theme="dark"] .task-icon.mock     { background: rgba(46,125,50,0.2); }
+
+.task-body { flex: 1; min-width: 0; }
+.task-topic {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.task-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.task-duration {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-elevated, var(--bg-surface));
+    padding: 2px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+.task-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--text-secondary);
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+}
+.task-card:hover .task-delete { opacity: 1; }
+.task-delete:hover { color: #f44336; }
+.task-delete svg { width: 14px; height: 14px; }
+
+/* ── Progress Bar ─────────────────────────────────────── */
+.progress-wrap {
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+.progress-track {
+    height: 8px;
+    border-radius: 100px;
+    background: var(--border-default);
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--accent), #00bcd4);
+    transition: width 0.4s ease;
+}
+
+/* ── Add Task Form ────────────────────────────────────── */
+.add-task-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    border: 1px dashed var(--border-default);
+    margin-top: 12px;
+    align-items: flex-end;
+}
+.add-task-form .field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 120px;
+}
+.add-task-form label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+.add-task-form select,
+.add-task-form input {
+    padding: 7px 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    background: var(--bg-base, #fff);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: inherit;
+}
+.add-task-form select:focus,
+.add-task-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.add-task-btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: var(--text-on-cobalt, #fff);
+    font-weight: 700;
+    font-size: 12px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+}
+.add-task-btn:hover { opacity: 0.85; }
+
+/* ── AI Plan Card ─────────────────────────────────────── */
+.ai-plan-card {
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    border: 1.5px solid var(--accent);
+    margin-bottom: 16px;
+}
+.ai-plan-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ai-plan-card p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+.ai-plan-schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+.ai-plan-slot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    font-size: 12px;
+    color: var(--text-primary);
+}
+.ai-plan-slot-time {
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 48px;
+}
+.generate-plan-btn {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--accent), #00bcd4);
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: 0.02em;
+}
+.generate-plan-btn:hover { opacity: 0.88; }
+.generate-plan-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Weak Topics ──────────────────────────────────────── */
+.weak-topic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.weak-topic-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    font-size: 12px;
+    color: var(--text-primary);
+}
+.weak-topic-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #f44336;
+    flex-shrink: 0;
+}
+.weak-topic-name { flex: 1; font-weight: 500; }
+
+/* ── Empty state ──────────────────────────────────────── */
+.empty-tasks {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+.empty-tasks svg {
+    width: 40px; height: 40px;
+    margin-bottom: 8px;
+    opacity: 0.35;
+}
+
+/* ── Toast notification ───────────────────────────────── */
+.planner-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    background: #323232;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+}
+.planner-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── Spinner for generate ─────────────────────────────── */
+@keyframes planner-spin {
+    to { transform: rotate(360deg); }
+}
+.btn-spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: planner-spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+/* ── Past-day read-only notice ───────────────────────── */
+.past-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, #ff9800 8%, transparent);
+    border: 1px solid color-mix(in srgb, #ff9800 25%, transparent);
+    color: #ff9800;
+    font-size: 12px;
+    font-weight: 600;
+}
+.past-notice svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ── Monthly Streak Calendar ─────────────────────────── */
+.streak-calendar {
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    margin-bottom: 16px;
+}
+.streak-calendar h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.streak-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    text-align: center;
+}
+.streak-cal-header {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 0 6px;
+}
+.streak-cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    color: var(--text-primary);
+    position: relative;
+}
+.streak-cal-day:hover:not(.empty):not(.s-future) {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    transform: scale(1.1);
+}
+.streak-cal-day.empty { cursor: default; }
+.streak-cal-day.s-completed {
+    background: #4caf50;
+    color: #fff;
+}
+.streak-cal-day.s-partial {
+    background: rgba(255,152,0,0.2);
+    color: #ff9800;
+}
+.streak-cal-day.s-none {
+    background: color-mix(in srgb, var(--border-default) 40%, transparent);
+    color: var(--text-secondary);
+}
+.streak-cal-day.s-future {
+    opacity: 0.25;
+    cursor: default;
+}
+.streak-cal-day.s-today {
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+.streak-cal-day.s-selected {
+    box-shadow: inset 0 0 0 2px #ff9800;
+}
+.streak-legend {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.streak-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+.streak-legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- ─── Header ───────────────────────────────────────── -->
+    <div class="planner-header">
+        <div>
+            <h1 class="page-header" style="margin-bottom:2px;">Daily Study Planner</h1>
+            <div class="planner-date" id="planner-date">{{ today }}</div>
+        </div>
+        <div class="planner-streak">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            {{ streak }} day{{ 's' if streak != 1 else '' }} streak
+        </div>
+    </div>
+
+    <!-- ─── Stats Row ────────────────────────────────────── -->
+    <div class="planner-stats">
+        <div class="planner-stat-card">
+            <div class="planner-stat-value gradient-text" id="stat-hours">{{ weekly_stats.total_hours }}</div>
+            <div class="planner-stat-label">Study Hours This Week</div>
+        </div>
+        <div class="planner-stat-card">
+            <div class="planner-stat-value" style="color:var(--accent);" id="stat-completed">{{ weekly_stats.tasks_completed }}</div>
+            <div class="planner-stat-label">Tasks Completed</div>
+        </div>
+        <div class="planner-stat-card">
+            <div class="planner-stat-value" style="color:var(--accent);" id="stat-total">{{ weekly_stats.tasks_total }}</div>
+            <div class="planner-stat-label">Total Tasks</div>
+        </div>
+        <div class="planner-stat-card">
+            <div class="planner-stat-value" style="color:#ff9800;">{{ streak }}</div>
+            <div class="planner-stat-label">Current Streak</div>
+        </div>
+    </div>
+
+    <!-- ─── Weekly Calendar ──────────────────────────────── -->
+    <div class="week-calendar" id="week-calendar">
+        {% for date_str, tasks in week_data.items() %}
+        {% set total = tasks | length %}
+        {% set done = tasks | selectattr('is_completed') | list | length %}
+        {% if total == 0 %}
+            {% set dot_class = 'gray' %}
+        {% elif done == total %}
+            {% set dot_class = 'green' %}
+        {% elif done > 0 %}
+            {% set dot_class = 'yellow' %}
+        {% else %}
+            {% set dot_class = 'red' %}
+        {% endif %}
+        {% if date_str < real_today %}
+            {% set day_state = 'past-day' %}
+        {% elif date_str == real_today %}
+            {% set day_state = 'today-day' %}
+        {% else %}
+            {% set day_state = 'future-day' %}
+        {% endif %}
+        <div class="week-day {{ day_state }} {% if date_str == today %}active{% endif %}"
+             data-date="{{ date_str }}"
+             onclick="switchDay('{{ date_str }}')">
+            <div class="week-day-name">{{ ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][loop.index0 % 7] }}</div>
+            <div class="week-day-num">{{ date_str.split('-')[2] | int }}</div>
+            <div class="week-dot {{ dot_class }}"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ─── Main Grid ────────────────────────────────────── -->
+    <div class="planner-grid">
+
+        <!-- Left: Selected Day's Tasks -->
+        <div>
+            <div class="card" style="padding:18px;">
+                <div class="task-section-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span id="task-section-label">{% if today == real_today %}Today's Tasks{% else %}Tasks for <span id="selected-date-display"></span>{% endif %}</span>
+                </div>
+
+                <div class="task-list" id="task-list">
+                    {% for task in today_tasks %}
+                    <div class="task-card {% if task.is_completed %}completed{% endif %}" data-task-id="{{ task.id }}">
+                        {% if is_past %}
+                        <div class="task-check {% if task.is_completed %}checked{% endif %}" style="cursor:default;"></div>
+                        {% else %}
+                        <button class="task-check {% if task.is_completed %}checked{% endif %}"
+                                onclick="toggleTask({{ task.id }}, {{ 'false' if task.is_completed else 'true' }})"
+                                title="Mark {{ 'incomplete' if task.is_completed else 'complete' }}"></button>
+                        {% endif %}
+                        <div class="task-icon {{ task.task_type }}">
+                            {% if task.task_type == 'study' %}
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                            {% elif task.task_type == 'quiz' %}
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            {% elif task.task_type == 'revision' %}
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                            {% elif task.task_type == 'mock' %}
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            {% endif %}
+                        </div>
+                        <div class="task-body">
+                            <div class="task-topic">{{ task.topic_name }}</div>
+                            {% if task.description %}
+                            <div class="task-desc">{{ task.description }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-duration">{{ task.duration_mins }} min</span>
+                            {% if not is_past %}
+                            <button class="task-delete" onclick="deleteTask({{ task.id }})" title="Delete task">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if not today_tasks %}
+                <div class="empty-tasks" id="empty-tasks">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <div>No tasks for {% if today == real_today %}today{% else %}this day{% endif %} yet. Add one below or generate an AI plan.</div>
+                </div>
+                {% endif %}
+
+                <!-- Progress -->
+                {% set total_count = today_tasks | length %}
+                {% set done_count = today_tasks | selectattr('is_completed') | list | length %}
+                <div class="progress-wrap" id="progress-wrap" {% if total_count == 0 %}style="display:none;"{% endif %}>
+                    <div class="progress-label">
+                        <span id="progress-text">{{ done_count }} of {{ total_count }} tasks done</span>
+                        <span id="progress-pct">{{ ((done_count / total_count * 100) | round | int) if total_count > 0 else 0 }}%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progress-fill" style="width:{{ ((done_count / total_count * 100) | round | int) if total_count > 0 else 0 }}%;"></div>
+                    </div>
+                </div>
+
+                {% if is_past %}
+                <!-- Past-date read-only notice -->
+                <div class="past-notice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Viewing a past date — tasks are read-only
+                </div>
+                {% else %}
+                <!-- Add Task Form -->
+                <form class="add-task-form" id="add-task-form" onsubmit="addTask(event)">
+                    <div class="field">
+                        <label for="new-type">Type</label>
+                        <select id="new-type" name="task_type" required>
+                            <option value="study">Study</option>
+                            <option value="quiz">Quiz</option>
+                            <option value="revision">Revision</option>
+                            <option value="mock">Mock Test</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="new-topic">Topic</label>
+                        <select id="new-topic" name="topic_id" required>
+                            <option value="">Select topic...</option>
+                            {% for opt in topic_options %}
+                            <option value="{{ opt.id }}">{{ opt.display_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field" style="max-width:90px;">
+                        <label for="new-duration">Minutes</label>
+                        <input type="number" id="new-duration" name="duration_mins" min="5" max="240" value="30" required>
+                    </div>
+                    <div class="field" style="min-width:160px;">
+                        <label for="new-desc">Description</label>
+                        <input type="text" id="new-desc" name="description" placeholder="Optional note..." maxlength="120">
+                    </div>
+                    <button type="submit" class="add-task-btn">+ Add Task</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Streak Calendar + AI Plan + Weak Topics -->
+        <div>
+            <!-- Monthly Streak Calendar -->
+            <div class="streak-calendar">
+                <h3>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    {{ month_name }}
+                </h3>
+                <div class="streak-cal-grid">
+                    <div class="streak-cal-header">M</div>
+                    <div class="streak-cal-header">T</div>
+                    <div class="streak-cal-header">W</div>
+                    <div class="streak-cal-header">T</div>
+                    <div class="streak-cal-header">F</div>
+                    <div class="streak-cal-header">S</div>
+                    <div class="streak-cal-header">S</div>
+                    {% for _ in range(month_first_weekday) %}
+                    <div class="streak-cal-day empty"></div>
+                    {% endfor %}
+                    {% for d in month_streak_data %}
+                    <div class="streak-cal-day s-{{ d.status }}{% if d.date == real_today %} s-today{% endif %}{% if d.date == today %} s-selected{% endif %}"
+                         {% if d.status != 'future' %}onclick="switchDay('{{ d.date }}')"{% endif %}
+                         title="{{ d.date }}">
+                        {{ d.day }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="streak-legend">
+                    <div class="streak-legend-item">
+                        <div class="streak-legend-dot" style="background:#4caf50;"></div>
+                        All done
+                    </div>
+                    <div class="streak-legend-item">
+                        <div class="streak-legend-dot" style="background:#ff9800;"></div>
+                        Partial
+                    </div>
+                    <div class="streak-legend-item">
+                        <div class="streak-legend-dot" style="background:var(--border-default);"></div>
+                        No tasks
+                    </div>
+                </div>
+            </div>
+
+            {% if not is_past %}
+            <!-- AI-Generated Study Plan -->
+            <div class="ai-plan-card">
+                <h3>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    AI Study Plan
+                </h3>
+                <p>Get a personalized weekly plan based on your weak topics, upcoming goals, and learning pace.</p>
+
+                <div class="ai-plan-schedule">
+                    <div class="ai-plan-slot">
+                        <span class="ai-plan-slot-time">60 min</span>
+                        <span>Concept learning &mdash; deep study of new or weak topics</span>
+                    </div>
+                    <div class="ai-plan-slot">
+                        <span class="ai-plan-slot-time">45 min</span>
+                        <span>Practice &mdash; quizzes and problem solving</span>
+                    </div>
+                    <div class="ai-plan-slot">
+                        <span class="ai-plan-slot-time">15 min</span>
+                        <span>Review &mdash; revisit yesterday's concepts</span>
+                    </div>
+                </div>
+
+                <button class="generate-plan-btn" id="generate-plan-btn" onclick="generatePlan()">
+                    Generate Weekly Plan
+                </button>
+                <div id="generate-plan-status" style="font-size:11px;color:var(--text-secondary);text-align:center;margin-top:8px;min-height:16px;"></div>
+            </div>
+            {% endif %}
+
+            <!-- Weak Topics -->
+            <div class="card" style="padding:18px;">
+                <div class="task-section-title" style="margin-bottom:10px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f44336" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Weak Topics — Needs Attention
+                </div>
+                {% if weak_topics %}
+                <div class="weak-topic-list">
+                    {% for topic in weak_topics %}
+                    <div class="weak-topic-item">
+                        <span class="weak-topic-dot"></span>
+                        <span class="weak-topic-name">{{ topic.display_name if topic.display_name is defined else topic.name }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="font-size:12px;color:var(--text-secondary);text-align:center;padding:12px 0;">
+                    No weak topics identified yet. Keep studying!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div><!-- /planner-grid -->
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="planner-toast" id="planner-toast"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+    /* ── Helpers ─────────────────────────────────────────── */
+    var currentDate = '{{ today }}';
+
+    function toast(msg, duration) {
+        var el = document.getElementById('planner-toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(el._t);
+        el._t = setTimeout(function(){ el.classList.remove('show'); }, duration || 2500);
+    }
+
+    function csrfHeaders() {
+        return { 'Content-Type': 'application/json' };
+    }
+
+    function taskTypeIcon(type) {
+        var icons = {
+            study:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+            quiz:     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+            revision: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+            mock:     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
+        };
+        return icons[type] || icons['study'];
+    }
+
+    /* ── Refresh progress bar ────────────────────────────── */
+    function refreshProgress() {
+        var cards = document.querySelectorAll('#task-list .task-card');
+        var total = cards.length;
+        var done = document.querySelectorAll('#task-list .task-card.completed').length;
+        var wrap = document.getElementById('progress-wrap');
+        var empty = document.getElementById('empty-tasks');
+
+        if (total === 0) {
+            wrap.style.display = 'none';
+            if (!empty) {
+                var e = document.createElement('div');
+                e.className = 'empty-tasks';
+                e.id = 'empty-tasks';
+                e.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div>No tasks for today yet. Add one below or generate an AI plan.</div>';
+                document.getElementById('task-list').after(e);
+            }
+            return;
+        }
+
+        if (empty) empty.remove();
+        wrap.style.display = '';
+        var pct = Math.round(done / total * 100);
+        document.getElementById('progress-text').textContent = done + ' of ' + total + ' tasks done';
+        document.getElementById('progress-pct').textContent = pct + '%';
+        document.getElementById('progress-fill').style.width = pct + '%';
+    }
+
+    /* ── Toggle task completion ───────────────────────────── */
+    window.toggleTask = function(taskId, markComplete) {
+        fetch('/api/planner/complete', {
+            method: 'POST',
+            headers: csrfHeaders(),
+            body: JSON.stringify({ task_id: taskId, is_completed: markComplete })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (data.error) { toast(data.error); return; }
+            var card = document.querySelector('.task-card[data-task-id="' + taskId + '"]');
+            if (!card) return;
+            var btn = card.querySelector('.task-check');
+            if (markComplete) {
+                card.classList.add('completed');
+                btn.classList.add('checked');
+                btn.setAttribute('onclick', 'toggleTask(' + taskId + ', false)');
+                btn.title = 'Mark incomplete';
+            } else {
+                card.classList.remove('completed');
+                btn.classList.remove('checked');
+                btn.setAttribute('onclick', 'toggleTask(' + taskId + ', true)');
+                btn.title = 'Mark complete';
+            }
+            refreshProgress();
+            toast(markComplete ? 'Task completed!' : 'Task marked incomplete');
+        })
+        .catch(function(){ toast('Could not update task. Try again.'); });
+    };
+
+    /* ── Delete task ─────────────────────────────────────── */
+    window.deleteTask = function(taskId) {
+        if (!confirm('Delete this task?')) return;
+        fetch('/api/planner/delete', {
+            method: 'POST',
+            headers: csrfHeaders(),
+            body: JSON.stringify({ task_id: taskId })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (data.error) { toast(data.error); return; }
+            var card = document.querySelector('.task-card[data-task-id="' + taskId + '"]');
+            if (card) {
+                card.style.transition = 'opacity 0.2s, transform 0.2s';
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(20px)';
+                setTimeout(function(){ card.remove(); refreshProgress(); }, 220);
+            }
+            toast('Task deleted');
+        })
+        .catch(function(){ toast('Could not delete task. Try again.'); });
+    };
+
+    /* ── Add task ────────────────────────────────────────── */
+    window.addTask = function(e) {
+        e.preventDefault();
+        var form = document.getElementById('add-task-form');
+        var typeEl = document.getElementById('new-type');
+        var topicEl = document.getElementById('new-topic');
+        var durEl = document.getElementById('new-duration');
+        var descEl = document.getElementById('new-desc');
+
+        if (!topicEl.value) { toast('Please select a topic'); return; }
+
+        var payload = {
+            task_date: currentDate,
+            task_type: typeEl.value,
+            topic_id: parseInt(topicEl.value, 10),
+            duration_mins: parseInt(durEl.value, 10) || 30,
+            description: descEl.value.trim()
+        };
+
+        fetch('/api/planner/add', {
+            method: 'POST',
+            headers: csrfHeaders(),
+            body: JSON.stringify(payload)
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (data.error) { toast(data.error); return; }
+            var task = data.task || data;
+            var taskId = task.id || Date.now();
+            var topicName = topicEl.options[topicEl.selectedIndex].text;
+            var html = '<div class="task-card" data-task-id="' + taskId + '">'
+                + '<button class="task-check" onclick="toggleTask(' + taskId + ', true)" title="Mark complete"></button>'
+                + '<div class="task-icon ' + payload.task_type + '">' + taskTypeIcon(payload.task_type) + '</div>'
+                + '<div class="task-body">'
+                + '<div class="task-topic">' + topicName + '</div>'
+                + (payload.description ? '<div class="task-desc">' + payload.description + '</div>' : '')
+                + '</div>'
+                + '<div class="task-meta">'
+                + '<span class="task-duration">' + payload.duration_mins + ' min</span>'
+                + '<button class="task-delete" onclick="deleteTask(' + taskId + ')" title="Delete task">'
+                + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+                + '</button>'
+                + '</div></div>';
+
+            var list = document.getElementById('task-list');
+            list.insertAdjacentHTML('beforeend', html);
+            var empty = document.getElementById('empty-tasks');
+            if (empty) empty.remove();
+            refreshProgress();
+
+            /* Reset form */
+            topicEl.value = '';
+            durEl.value = '30';
+            descEl.value = '';
+            toast('Task added!');
+        })
+        .catch(function(){ toast('Could not add task. Try again.'); });
+    };
+
+    /* ── Switch calendar day ──────────────────────────────── */
+    window.switchDay = function(dateStr) {
+        /* Update visual active state */
+        document.querySelectorAll('.week-day').forEach(function(d){
+            d.classList.toggle('active', d.getAttribute('data-date') === dateStr);
+        });
+        /* Navigate to planner for that date */
+        window.location.href = '/daily-planner?date=' + encodeURIComponent(dateStr);
+    };
+
+    /* ── Generate AI Plan ────────────────────────────────── */
+    window.generatePlan = function() {
+        var btn = document.getElementById('generate-plan-btn');
+        var status = document.getElementById('generate-plan-status');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn-spinner"></span>Generating...';
+        status.textContent = 'Analyzing your weak topics and building an optimal schedule...';
+
+        fetch('/api/planner/generate', {
+            method: 'POST',
+            headers: csrfHeaders(),
+            body: JSON.stringify({ date: currentDate })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            btn.textContent = 'Generate Weekly Plan';
+            if (data.error) {
+                status.textContent = data.error;
+                toast(data.error);
+                return;
+            }
+            var count = data.tasks_created || 0;
+            status.textContent = count + ' tasks created for the next 7 days!';
+            toast('AI plan generated - ' + count + ' tasks created!');
+            /* Reload after a brief pause to show the new tasks */
+            setTimeout(function(){ window.location.reload(); }, 1200);
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Generate Weekly Plan';
+            status.textContent = 'Something went wrong. Please try again.';
+            toast('Could not generate plan. Try again.');
+        });
+    };
+
+    /* ── Format the date display ─────────────────────────── */
+    (function formatDate(){
+        var el = document.getElementById('planner-date');
+        if (!el) return;
+        try {
+            var parts = currentDate.split('-');
+            var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            var formatted = days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+            el.textContent = formatted;
+            /* Also set the selected-date-display label if viewing a non-today date */
+            var selLabel = document.getElementById('selected-date-display');
+            if (selLabel) selLabel.textContent = formatted;
+        } catch(e) {}
+    })();
+
+})();
+</script>
+{% endblock %}

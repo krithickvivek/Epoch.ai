@@ -1,0 +1,1765 @@
+{% extends "base.html" %}
+{% block title %}DSA Roadmap — Epoch{% endblock %}
+{% block head %}
+<style>
+/* ── DSA Roadmap Page Styles ── */
+
+/* Hero Section */
+.dsa-hero {
+    position: relative;
+    padding: 40px 0 32px;
+    margin-bottom: 32px;
+}
+.dsa-hero-inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 32px;
+    flex-wrap: wrap;
+}
+.dsa-hero-text h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-heading);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+}
+.dsa-hero-text h1 span {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.dsa-hero-text p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 520px;
+    line-height: 1.6;
+}
+.dsa-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+}
+.dsa-stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    transition: transform var(--duration-base) var(--ease-out-expo), box-shadow var(--duration-base) var(--ease-out-expo);
+}
+.dsa-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+}
+.dsa-stat-number {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    display: block;
+    letter-spacing: -0.02em;
+}
+.dsa-stat-number.gradient-num {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.dsa-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 4px;
+    display: block;
+}
+
+/* Section Headers */
+.dsa-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.dsa-section-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.dsa-section-header h2 .section-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--cobalt-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.dsa-section-header h2 .section-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--accent);
+}
+.dsa-section-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 4px 0 0 42px;
+}
+
+/* ── Visual Roadmap Path ── */
+.dsa-roadmap-path {
+    position: relative;
+    padding: 24px 0 40px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.dsa-roadmap-path::-webkit-scrollbar {
+    height: 6px;
+}
+.dsa-roadmap-path::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 3px;
+}
+.dsa-roadmap-track {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: max-content;
+    padding: 0 20px;
+    position: relative;
+}
+.dsa-roadmap-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    transition: transform var(--duration-base) var(--ease-spring);
+}
+.dsa-roadmap-node:hover {
+    transform: scale(1.08);
+}
+.dsa-node-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    border: 3px solid var(--border-default);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    box-shadow: var(--card-shadow);
+    transition: all var(--duration-base) var(--ease-out-expo);
+    position: relative;
+}
+.dsa-roadmap-node.completed .dsa-node-circle {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+.dsa-roadmap-node.in-progress .dsa-node-circle {
+    border-color: var(--accent);
+    background: var(--cobalt-muted);
+    color: var(--accent);
+    box-shadow: 0 0 20px var(--cobalt-glow);
+    animation: dsa-pulse 2.5s ease-in-out infinite;
+}
+.dsa-roadmap-node.locked .dsa-node-circle {
+    opacity: 0.5;
+}
+@keyframes dsa-pulse {
+    0%, 100% { box-shadow: 0 0 20px var(--cobalt-glow); }
+    50% { box-shadow: 0 0 30px rgba(30, 84, 183, 0.35); }
+}
+.dsa-node-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 80px;
+    line-height: 1.3;
+}
+.dsa-node-mastery {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+}
+.dsa-roadmap-connector {
+    width: 48px;
+    height: 3px;
+    background: var(--border-default);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+.dsa-roadmap-connector.done {
+    background: linear-gradient(90deg, #22c55e, #22c55e);
+}
+.dsa-roadmap-connector.active {
+    background: linear-gradient(90deg, #22c55e, var(--accent));
+}
+
+/* ── Topic Cards Grid ── */
+.dsa-topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+.dsa-topic-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    transition: transform var(--duration-base) var(--ease-out-expo), box-shadow var(--duration-base) var(--ease-out-expo), border-color var(--duration-base);
+    position: relative;
+    overflow: hidden;
+}
+.dsa-topic-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--card-hover-shadow);
+    border-color: var(--accent);
+}
+.dsa-topic-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.dsa-topic-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-heading);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dsa-topic-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.dsa-topic-difficulty {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+}
+.dsa-diff-beginner {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+}
+.dsa-diff-intermediate {
+    background: rgba(234, 179, 8, 0.12);
+    color: #eab308;
+}
+.dsa-diff-advanced {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+.dsa-topic-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+}
+.dsa-topic-progress-track {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--progress-track);
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+.dsa-topic-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--gradient-accent);
+    transition: width 0.6s var(--ease-out-expo);
+}
+.dsa-topic-progress-fill.mastered {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+.dsa-topic-progress-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+}
+.dsa-topic-learn-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* ── Pattern Cards ── */
+.dsa-patterns-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+}
+@media (max-width: 768px) {
+    .dsa-patterns-grid { grid-template-columns: 1fr; }
+}
+.dsa-pattern-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    box-shadow: var(--card-shadow);
+    transition: all var(--duration-base) var(--ease-out-expo);
+}
+.dsa-pattern-card:hover {
+    box-shadow: var(--card-hover-shadow);
+    border-color: var(--accent);
+}
+.dsa-pattern-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.dsa-pattern-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-heading);
+}
+.dsa-pattern-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--cobalt-muted);
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    flex-shrink: 0;
+}
+.dsa-pattern-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+/* Oval LC number badges row */
+.dsa-pattern-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+.lc-oval {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 100px;
+    background: var(--bg-surface);
+    border: 1.5px solid var(--border-default);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-family: var(--font-mono, monospace);
+    flex-shrink: 0;
+    letter-spacing: -0.01em;
+}
+/* Toggle button */
+.dsa-pattern-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 4px 0;
+    transition: opacity var(--duration-fast);
+}
+.dsa-pattern-toggle:hover { opacity: 0.8; }
+.dsa-pattern-toggle svg {
+    width: 14px; height: 14px;
+    transition: transform var(--duration-base) var(--ease-out-expo);
+}
+.dsa-pattern-toggle.expanded svg { transform: rotate(180deg); }
+/* Expandable problem list */
+.dsa-pattern-problems {
+    display: none;
+    margin-top: 14px;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 10px;
+}
+.dsa-pattern-problems.show { display: block; }
+/* Single problem row */
+.p-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 13px;
+}
+.p-row:last-child { border-bottom: none; }
+/* Oval badge inside row */
+.p-row .lc-oval {
+    min-width: 38px;
+    height: 26px;
+    font-size: 12px;
+    background: var(--bg-surface);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+}
+.p-row-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+.p-row-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+/* Difficulty badges */
+.diff-easy   { background: rgba(34,197,94,0.12); color: #22c55e; }
+.diff-medium { background: rgba(234,179,8,0.12); color: #eab308; }
+.diff-hard   { background: rgba(239,68,68,0.12); color: #ef4444; }
+.diff-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+/* Visit button */
+.lc-visit {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 100px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s, transform 0.15s;
+    cursor: pointer;
+}
+.lc-visit:hover {
+    background: var(--accent-hover, #163d8f);
+    color: #fff;
+    transform: translateY(-1px);
+}
+.lc-visit:active { transform: translateY(0); }
+.lc-visit svg { width: 11px; height: 11px; stroke: currentColor; fill: none; }
+/* Responsive */
+@media (max-width: 480px) {
+    .p-row { flex-wrap: wrap; gap: 6px; }
+    .p-row-name { white-space: normal; }
+}
+
+/* ── Problems Roadmap Table ── */
+.dsa-problems-section {
+    margin-bottom: 40px;
+}
+.dsa-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.dsa-filter-btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--duration-fast);
+}
+.dsa-filter-btn:hover,
+.dsa-filter-btn.active {
+    background: var(--accent);
+    color: var(--text-on-cobalt);
+    border-color: var(--accent);
+}
+.dsa-search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-default);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color var(--duration-fast);
+}
+.dsa-search-input:focus {
+    border-color: var(--accent);
+    box-shadow: var(--focus-ring);
+}
+.dsa-search-input::placeholder {
+    color: var(--text-muted);
+}
+.dsa-problems-table-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+}
+.dsa-problems-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.dsa-problems-table thead {
+    background: var(--bg-surface);
+}
+.dsa-problems-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-default);
+}
+.dsa-problems-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+.dsa-problems-table tbody tr {
+    transition: background var(--duration-fast);
+}
+.dsa-problems-table tbody tr:hover {
+    background: var(--bg-hover);
+}
+.dsa-problems-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.dsa-problem-name-cell {
+    font-weight: 600;
+    color: var(--text-heading);
+}
+.dsa-difficulty-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    display: inline-block;
+}
+.dsa-difficulty-badge.easy {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+}
+.dsa-difficulty-badge.medium {
+    background: rgba(234, 179, 8, 0.12);
+    color: #eab308;
+}
+.dsa-difficulty-badge.hard {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+.dsa-company-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.dsa-company-tag {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+    white-space: nowrap;
+}
+.dsa-status-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border-default);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    flex-shrink: 0;
+}
+.dsa-status-dot.solved {
+    border-color: #22c55e;
+    background: #22c55e;
+}
+.dsa-status-dot.solved::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+}
+.dsa-status-dot.attempted {
+    border-color: #eab308;
+    background: rgba(234, 179, 8, 0.2);
+}
+.dsa-problems-count-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.dsa-problems-count-bar span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.dsa-count-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* ── Company-Tagged Problems ── */
+.dsa-company-section {
+    margin-bottom: 40px;
+}
+.dsa-company-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+.dsa-company-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    box-shadow: var(--card-shadow);
+    transition: all var(--duration-base) var(--ease-out-expo);
+    cursor: pointer;
+}
+.dsa-company-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+    border-color: var(--accent);
+}
+.dsa-company-logo {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+.dsa-company-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin-bottom: 4px;
+}
+.dsa-company-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ── Company Problems View ── */
+.cq-panel { display: none; }
+.cq-panel.active { display: block; }
+.cq-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-default);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 18px;
+}
+.cq-back-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.cq-back-btn svg { width: 14px; height: 14px; }
+.cq-company-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+.cq-company-badge {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+}
+.cq-company-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-heading);
+}
+.cq-company-count {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.cq-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+@media (max-width: 768px) {
+    .cq-list { grid-template-columns: 1fr; }
+}
+.cq-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    transition: all 0.15s ease;
+    text-decoration: none;
+    color: inherit;
+}
+.cq-item:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: var(--card-hover-shadow);
+}
+.cq-oval {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 100px;
+    background: #6b7280;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+.cq-oval.cq-easy {
+    background: #22c55e;
+    color: #fff;
+}
+.cq-oval.cq-medium {
+    background: #eab308;
+    color: #fff;
+}
+.cq-oval.cq-hard {
+    background: #ef4444;
+    color: #fff;
+}
+.cq-problem-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+.cq-arrow {
+    width: 16px; height: 16px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+.cq-item:hover .cq-arrow { color: var(--accent); }
+
+/* ── Interview Tips ── */
+.dsa-tips-section {
+    margin-bottom: 40px;
+}
+.dsa-tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+.dsa-tip-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    box-shadow: var(--card-shadow);
+    transition: all var(--duration-base) var(--ease-out-expo);
+}
+.dsa-tip-card:hover {
+    box-shadow: var(--card-hover-shadow);
+}
+.dsa-tip-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gradient-accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+.dsa-tip-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin-bottom: 6px;
+}
+.dsa-tip-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .dsa-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .dsa-topics-grid {
+        grid-template-columns: 1fr;
+    }
+    .dsa-patterns-grid {
+        grid-template-columns: 1fr;
+    }
+    .dsa-problems-table-wrap {
+        overflow-x: auto;
+    }
+    .dsa-problems-table {
+        min-width: 640px;
+    }
+    .dsa-company-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .dsa-tips-grid {
+        grid-template-columns: 1fr;
+    }
+    .dsa-hero-text h1 {
+        font-size: 22px;
+    }
+}
+@media (max-width: 480px) {
+    .dsa-stats-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .dsa-company-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- ════════════ HERO SECTION ════════════ -->
+    <section class="dsa-hero">
+        <div class="dsa-hero-inner">
+            <div class="dsa-hero-text">
+                <h1>DSA <span>Roadmap</span></h1>
+                <p>
+                    Master Data Structures &amp; Algorithms with a structured, pattern-based approach.
+                    {{ total_problems }}+ curated problems tagged by company, difficulty, and pattern — built for Indian placement prep.
+                </p>
+            </div>
+        </div>
+
+        {% set total_problems = problems_roadmap | length if problems_roadmap else 0 %}
+        {% set total_topics = dsa_topics | length if dsa_topics else 0 %}
+        {% set total_patterns = patterns | length if patterns else 0 %}
+        {% set progress_values = user_progress.values() | list if user_progress else [] %}
+        {% set overall_progress = (progress_values | sum / progress_values | length) | round | int if progress_values | length > 0 else 0 %}
+
+        <div class="dsa-stats-row">
+            <div class="dsa-stat-card">
+                <span class="dsa-stat-number gradient-num">{{ total_problems }}+</span>
+                <span class="dsa-stat-label">Total Problems</span>
+            </div>
+            <div class="dsa-stat-card">
+                <span class="dsa-stat-number">{{ total_topics }}</span>
+                <span class="dsa-stat-label">Topics</span>
+            </div>
+            <div class="dsa-stat-card">
+                <span class="dsa-stat-number">{{ total_patterns }}</span>
+                <span class="dsa-stat-label">Patterns</span>
+            </div>
+            <div class="dsa-stat-card">
+                <span class="dsa-stat-number gradient-num">{{ overall_progress }}%</span>
+                <span class="dsa-stat-label">Your Progress</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════ VISUAL ROADMAP PATH ════════════ -->
+    <section class="dsa-roadmap-section" style="margin-bottom:40px;">
+        <div class="dsa-section-header">
+            <div>
+                <h2>
+                    <span class="section-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                    Learning Path
+                </h2>
+                <p class="dsa-section-subtitle">Follow this progression from fundamentals to advanced topics. Each node shows your mastery.</p>
+            </div>
+        </div>
+        <div class="dsa-roadmap-path">
+            <div class="dsa-roadmap-track">
+                {% for topic in dsa_topics %}
+                    {% set mastery = user_progress.get(topic.id, 0) if user_progress else 0 %}
+                    {% set node_state = 'completed' if mastery >= 80 else ('in-progress' if mastery > 0 else 'locked') %}
+                    {% set connector_state = 'done' if mastery >= 80 else ('active' if mastery > 0 else '') %}
+
+                    <div class="dsa-roadmap-node {{ node_state }}" title="{{ topic.display_name }} — {{ mastery }}% mastery">
+                        <div class="dsa-node-circle">
+                            {% if mastery >= 80 %}
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            {% else %}
+                                {{ loop.index }}
+                            {% endif %}
+                        </div>
+                        <span class="dsa-node-label">{{ topic.display_name }}</span>
+                        <span class="dsa-node-mastery">{{ mastery }}%</span>
+                    </div>
+
+                    {% if not loop.last %}
+                        <div class="dsa-roadmap-connector {{ connector_state }}"></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════ TOPIC CARDS ════════════ -->
+    <section class="dsa-topics-section" style="margin-bottom:40px;">
+        <div class="dsa-section-header">
+            <div>
+                <h2>
+                    <span class="section-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    </span>
+                    Topics
+                </h2>
+                <p class="dsa-section-subtitle">{{ dsa_topics | length }} core DSA topics with progress tracking and difficulty ratings.</p>
+            </div>
+        </div>
+
+        <div class="dsa-topics-grid">
+            {% set topic_icons = {
+                'arrays': '[ ]',
+                'linked_lists': '->',
+                'stacks_queues': '||',
+                'trees': '/\\',
+                'graphs': 'G',
+                'hashing': '#',
+                'dp': 'DP',
+                'searching_sorting': '<>',
+                'recursion_backtracking': 'fn',
+                'greedy': '$',
+                'bit_manipulation': '01',
+                'string_algorithms': 'Aa'
+            } %}
+            {% set topic_colors = {
+                'arrays': '#3b82f6',
+                'linked_lists': '#8b5cf6',
+                'stacks_queues': '#06b6d4',
+                'trees': '#22c55e',
+                'graphs': '#f59e0b',
+                'hashing': '#ef4444',
+                'dp': '#ec4899',
+                'searching_sorting': '#14b8a6',
+                'recursion_backtracking': '#a855f7',
+                'greedy': '#f97316',
+                'bit_manipulation': '#6366f1',
+                'string_algorithms': '#0ea5e9'
+            } %}
+
+            {% for topic in dsa_topics %}
+                {% set mastery = user_progress.get(topic.id, 0) if user_progress else 0 %}
+                {% set color = topic_colors.get(topic.id, '#1E54B7') %}
+                {% set icon = topic_icons.get(topic.id, '?') %}
+                {% set diff_class = 'dsa-diff-beginner' if topic.difficulty == 'beginner' else ('dsa-diff-intermediate' if topic.difficulty == 'intermediate' else 'dsa-diff-advanced') %}
+
+                <div class="dsa-topic-card">
+                    <div class="dsa-topic-card-header">
+                        <div class="dsa-topic-card-title">
+                            <div class="dsa-topic-icon" style="background:{{ color }}18;color:{{ color }};">
+                                <span style="font-size:12px;font-weight:800;font-family:var(--font-mono);">{{ icon }}</span>
+                            </div>
+                            {{ topic.display_name }}
+                        </div>
+                        <span class="dsa-topic-difficulty {{ diff_class }}">{{ topic.difficulty }}</span>
+                    </div>
+                    <div class="dsa-topic-card-meta">
+                        <span>{{ topic.problem_count }} problems</span>
+                        <span>{{ mastery }}% mastery</span>
+                    </div>
+                    <div class="dsa-topic-progress-track">
+                        <div class="dsa-topic-progress-fill {{ 'mastered' if mastery >= 80 else '' }}" style="width:{{ mastery }}%;"></div>
+                    </div>
+                    <div class="dsa-topic-progress-text">
+                        <span>Progress</span>
+                        <span>{{ mastery }}%</span>
+                    </div>
+                    <a href="/learning/study?topic={{ topic.id }}"
+                       class="dsa-topic-learn-btn"
+                       style="display:block;text-align:center;margin-top:12px;padding:8px 16px;border-radius:var(--radius-pill);font-size:12px;font-weight:700;text-decoration:none;transition:all 0.15s;
+                       {% if mastery > 0 %}background:var(--accent);color:#fff;{% else %}background:var(--cobalt-muted);color:var(--accent);border:1px solid var(--accent);{% endif %}">
+                        {% if mastery > 0 %}
+                            Continue Learning &rarr;
+                        {% else %}
+                            Start Learning &rarr;
+                        {% endif %}
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ════════════ PATTERN-BASED PROBLEM GROUPS ════════════ -->
+    <section class="dsa-patterns-section" style="margin-bottom:40px;">
+        <div class="dsa-section-header">
+            <div>
+                <h2>
+                    <span class="section-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    </span>
+                    Pattern-Based Groups
+                </h2>
+                <p class="dsa-section-subtitle">Learn to recognize patterns — the fastest path to solving any DSA problem in interviews.</p>
+            </div>
+        </div>
+
+        <div class="dsa-patterns-grid">
+            {% for pattern in patterns %}
+                <div class="dsa-pattern-card">
+                    <!-- Header -->
+                    <div class="dsa-pattern-header">
+                        <span class="dsa-pattern-name">{{ pattern.name }}</span>
+                        <span class="dsa-pattern-count">{{ pattern.problems | length }} problems</span>
+                    </div>
+                    <p class="dsa-pattern-desc">{{ pattern.description }}</p>
+
+                    <!-- Oval LC number badges -->
+                    <div class="dsa-pattern-badges">
+                        {% for prob in pattern.problems %}
+                            <span class="lc-oval">{{ prob.lc_num }}</span>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Toggle -->
+                    <button class="dsa-pattern-toggle" onclick="togglePattern(this)" aria-label="Show problems">
+                        <span>Show Problems</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+
+                    <!-- Problem rows (hidden until toggled) -->
+                    <div class="dsa-pattern-problems">
+                        {% for prob in pattern.problems %}
+                        <div class="p-row">
+                            <span class="lc-oval">{{ prob.lc_num }}</span>
+                            <span class="p-row-name" title="{{ prob.title }}">{{ prob.title }}</span>
+                            <div class="p-row-right">
+                                <span class="diff-tag diff-{{ prob.difficulty | lower }}">{{ prob.difficulty }}</span>
+                                <a class="lc-visit"
+                                   href="{{ prob.url }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   aria-label="Open {{ prob.title }} on LeetCode">
+                                    Visit
+                                    <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- ════════════ PROBLEMS ROADMAP TABLE ════════════ -->
+    <section class="dsa-problems-section">
+        <div class="dsa-section-header">
+            <div>
+                <h2>
+                    <span class="section-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    </span>
+                    {{ total_problems }}+ Problems Roadmap
+                </h2>
+                <p class="dsa-section-subtitle">Filter by difficulty, search by name, and track your progress through every problem.</p>
+            </div>
+        </div>
+
+        <!-- Difficulty counts summary -->
+        {% set easy_count = problems_roadmap | selectattr('difficulty', 'equalto', 'Easy') | list | length if problems_roadmap else 0 %}
+        {% set medium_count = problems_roadmap | selectattr('difficulty', 'equalto', 'Medium') | list | length if problems_roadmap else 0 %}
+        {% set hard_count = problems_roadmap | selectattr('difficulty', 'equalto', 'Hard') | list | length if problems_roadmap else 0 %}
+
+        <div class="dsa-problems-count-bar">
+            <span><span class="dsa-count-dot" style="background:#22c55e;"></span> Easy: {{ easy_count }}</span>
+            <span><span class="dsa-count-dot" style="background:#eab308;"></span> Medium: {{ medium_count }}</span>
+            <span><span class="dsa-count-dot" style="background:#ef4444;"></span> Hard: {{ hard_count }}</span>
+            <span style="margin-left:auto;font-weight:600;color:var(--text-heading);">Total: {{ total_problems }}</span>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="dsa-filter-bar">
+            <button class="dsa-filter-btn active" onclick="filterProblems('all', this)">All</button>
+            <button class="dsa-filter-btn" onclick="filterProblems('Easy', this)">Easy</button>
+            <button class="dsa-filter-btn" onclick="filterProblems('Medium', this)">Medium</button>
+            <button class="dsa-filter-btn" onclick="filterProblems('Hard', this)">Hard</button>
+            <input type="text" class="dsa-search-input" id="dsa-problem-search" placeholder="Search problems by name, topic, or company..." oninput="searchProblems(this.value)">
+        </div>
+
+        <!-- Problems Table -->
+        <div class="dsa-problems-table-wrap">
+            <table class="dsa-problems-table" id="dsa-problems-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px;"></th>
+                        <th style="width:50px;">#</th>
+                        <th>Problem</th>
+                        <th>Topic</th>
+                        <th>Difficulty</th>
+                        <th>Companies</th>
+                        <th style="width:70px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problem in problems_roadmap %}
+                    <tr class="dsa-problem-row" data-difficulty="{{ problem.difficulty }}" data-name="{{ problem.name | lower }}" data-topic="{{ problem.topic | default('') | lower }}" data-companies="{{ problem.companies | default([]) | join(',') | lower }}">
+                        <td>
+                            <span class="dsa-status-dot {{ 'solved' if problem.solved is defined and problem.solved else ('attempted' if problem.attempted is defined and problem.attempted else '') }}" onclick="toggleSolved(this)"></span>
+                        </td>
+                        <td style="font-size:12px;color:var(--text-muted);font-weight:700;">{{ problem.lc_num }}</td>
+                        <td class="dsa-problem-name-cell">{{ problem.name }}</td>
+                        <td style="font-size:12px;color:var(--text-secondary);">{{ problem.topic | default('General') }}</td>
+                        <td>
+                            <span class="diff-tag diff-{{ problem.difficulty | lower }}">{{ problem.difficulty }}</span>
+                        </td>
+                        <td>
+                            <div class="dsa-company-tags">
+                                {% for company in problem.companies | default([]) %}
+                                    <span class="dsa-company-tag">{{ company }}</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            <a class="lc-visit" href="{{ problem.url }}" target="_blank" rel="noopener noreferrer" aria-label="Open on LeetCode">
+                                Visit
+                                <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if not problems_roadmap or problems_roadmap | length == 0 %}
+        <div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px;">
+            No problems loaded yet. Check back soon as the roadmap is being curated.
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- ════════════ COMPANY-TAGGED PROBLEMS ════════════ -->
+    <section class="dsa-company-section" id="company-section">
+        <div class="dsa-section-header">
+            <div>
+                <h2>
+                    <span class="section-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    </span>
+                    Company-Tagged Problems
+                </h2>
+                <p class="dsa-section-subtitle">Problems frequently asked by top product companies in Indian campus placements and off-campus drives.</p>
+            </div>
+        </div>
+
+        <!-- Company Grid (default view) -->
+        <div class="dsa-company-grid" id="cq-grid"></div>
+
+        <!-- Company Problems Panel (shown on click) -->
+        <div class="cq-panel" id="cq-panel">
+            <button class="cq-back-btn" onclick="showCompanyGrid()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Back to Companies
+            </button>
+            <div class="cq-company-header" id="cq-header"></div>
+            <div class="cq-list" id="cq-list"></div>
+        </div>
+    </section>
+
+    <!-- ════════════ INTERVIEW TIPS ════════════ -->
+    <section class="dsa-tips-section">
+        <div class="dsa-section-header">
+            <div>
+                <h2>
+                    <span class="section-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </span>
+                    Interview Tips
+                </h2>
+                <p class="dsa-section-subtitle">Battle-tested strategies from engineers who cracked FAANG and top Indian product companies.</p>
+            </div>
+        </div>
+
+        <div class="dsa-tips-grid">
+            <div class="dsa-tip-card">
+                <div class="dsa-tip-number">1</div>
+                <div class="dsa-tip-title">Master Patterns, Not Problems</div>
+                <div class="dsa-tip-text">
+                    Instead of grinding 500+ random problems, focus on the 15-20 core patterns (Two Pointers, Sliding Window, BFS/DFS, DP patterns, etc.).
+                    Once you recognize the pattern, 80% of the problem is already solved.
+                </div>
+            </div>
+            <div class="dsa-tip-card">
+                <div class="dsa-tip-number">2</div>
+                <div class="dsa-tip-title">Think Out Loud</div>
+                <div class="dsa-tip-text">
+                    Interviewers evaluate your thought process, not just the final code. Start with brute force, discuss time/space trade-offs,
+                    then optimize. Communicate your approach before writing a single line.
+                </div>
+            </div>
+            <div class="dsa-tip-card">
+                <div class="dsa-tip-number">3</div>
+                <div class="dsa-tip-title">Time-Box Your Practice</div>
+                <div class="dsa-tip-text">
+                    In real interviews you get 30-45 minutes per problem. Practice with a timer.
+                    If you cannot solve it in 25 minutes, read the editorial — struggling beyond that has diminishing returns.
+                </div>
+            </div>
+            <div class="dsa-tip-card">
+                <div class="dsa-tip-number">4</div>
+                <div class="dsa-tip-title">Revise with Spaced Repetition</div>
+                <div class="dsa-tip-text">
+                    Solve a problem today, revisit it after 3 days, then after 7 days. This fights the forgetting curve and builds long-term retention.
+                    Epoch's AI agents automate this for you.
+                </div>
+            </div>
+            <div class="dsa-tip-card">
+                <div class="dsa-tip-number">5</div>
+                <div class="dsa-tip-title">Company-Specific Prep</div>
+                <div class="dsa-tip-text">
+                    Two weeks before your interview, shift focus to that company's most-asked problems.
+                    Amazon loves BFS/DFS and DP; Google favors graph and string problems; Flipkart tests arrays and greedy heavily.
+                </div>
+            </div>
+            <div class="dsa-tip-card">
+                <div class="dsa-tip-number">6</div>
+                <div class="dsa-tip-title">Handle Edge Cases First</div>
+                <div class="dsa-tip-text">
+                    Before coding, list edge cases: empty input, single element, duplicates, negative numbers, integer overflow.
+                    Mentioning these proactively signals maturity to your interviewer.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer badge -->
+    <div style="text-align:center;padding:16px;background:var(--bg-surface);border:1px solid var(--border-default);border-radius:var(--radius-lg);margin-bottom:24px;">
+        <span style="font-size:11px;font-weight:600;color:var(--accent);">Epoch.ai DSA Roadmap</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">Curated for Indian placement prep &middot; Pattern-based learning &middot; Powered by OpenENV AI</span>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+    /* ── Pattern card expand/collapse ── */
+    window.togglePattern = function(btn) {
+        var panel = btn.nextElementSibling;
+        var isOpen = panel.classList.contains('show');
+        panel.classList.toggle('show');
+        btn.classList.toggle('expanded');
+        btn.querySelector('span').textContent = isOpen ? 'Show Problems' : 'Hide Problems';
+    };
+
+    /* ── Problem table: difficulty filter ── */
+    window.filterProblems = function(difficulty, clickedBtn) {
+        var rows = document.querySelectorAll('.dsa-problem-row');
+        rows.forEach(function(row) {
+            if (difficulty === 'all' || row.getAttribute('data-difficulty') === difficulty) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        // Update active button
+        document.querySelectorAll('.dsa-filter-btn').forEach(function(b) {
+            b.classList.remove('active');
+        });
+        if (clickedBtn) clickedBtn.classList.add('active');
+    };
+
+    /* ── Problem table: text search ── */
+    window.searchProblems = function(query) {
+        var q = (query || '').toLowerCase().trim();
+        var rows = document.querySelectorAll('.dsa-problem-row');
+        rows.forEach(function(row) {
+            var name = row.getAttribute('data-name') || '';
+            var topic = row.getAttribute('data-topic') || '';
+            var companies = row.getAttribute('data-companies') || '';
+            var match = !q || name.indexOf(q) !== -1 || topic.indexOf(q) !== -1 || companies.indexOf(q) !== -1;
+            row.style.display = match ? '' : 'none';
+        });
+        // Reset filter buttons to "All"
+        if (q) {
+            document.querySelectorAll('.dsa-filter-btn').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            document.querySelector('.dsa-filter-btn').classList.add('active');
+        }
+    };
+
+    /* ── Toggle problem solved status (visual only) ── */
+    window.toggleSolved = function(dot) {
+        if (dot.classList.contains('solved')) {
+            dot.classList.remove('solved');
+            dot.classList.remove('attempted');
+        } else if (dot.classList.contains('attempted')) {
+            dot.classList.remove('attempted');
+            dot.classList.add('solved');
+        } else {
+            dot.classList.add('attempted');
+        }
+    };
+
+    /* ── Company Questions Dashboard ── */
+    var companyMeta = [
+        {key:'Amazon', icon:'A', color:'#ff9900'},
+        {key:'Google', icon:'G', color:'#4285f4'},
+        {key:'Microsoft', icon:'M', color:'#00a4ef'},
+        {key:'Meta', icon:'Me', color:'#0668E1'},
+        {key:'Apple', icon:'Ap', color:'#555555'},
+        {key:'Flipkart', icon:'F', color:'#2874f0'},
+        {key:'Adobe', icon:'Ad', color:'#ff0000'},
+        {key:'Uber', icon:'U', color:'#000000'},
+        {key:'Samsung', icon:'S', color:'#1428a0'},
+        {key:'Intuit', icon:'In', color:'#365ebf'},
+        {key:'Paytm', icon:'P', color:'#00baf2'},
+        {key:'DE Shaw', icon:'DE', color:'#003366'},
+        {key:'Morgan Stanley', icon:'MS', color:'#003986'}
+    ];
+
+    var companyQuestions = {
+        Amazon: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:2, name:"Add Two Numbers", diff:"Medium", link:"https://leetcode.com/problems/add-two-numbers/"},
+            {id:3, name:"Longest Substring Without Repeating Characters", diff:"Medium", link:"https://leetcode.com/problems/longest-substring-without-repeating-characters/"},
+            {id:5, name:"Longest Palindromic Substring", diff:"Medium", link:"https://leetcode.com/problems/longest-palindromic-substring/"},
+            {id:15, name:"3Sum", diff:"Medium", link:"https://leetcode.com/problems/3sum/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:21, name:"Merge Two Sorted Lists", diff:"Easy", link:"https://leetcode.com/problems/merge-two-sorted-lists/"},
+            {id:23, name:"Merge k Sorted Lists", diff:"Hard", link:"https://leetcode.com/problems/merge-k-sorted-lists/"},
+            {id:42, name:"Trapping Rain Water", diff:"Hard", link:"https://leetcode.com/problems/trapping-rain-water/"},
+            {id:49, name:"Group Anagrams", diff:"Medium", link:"https://leetcode.com/problems/group-anagrams/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:76, name:"Minimum Window Substring", diff:"Hard", link:"https://leetcode.com/problems/minimum-window-substring/"},
+            {id:79, name:"Word Search", diff:"Medium", link:"https://leetcode.com/problems/word-search/"},
+            {id:98, name:"Validate Binary Search Tree", diff:"Medium", link:"https://leetcode.com/problems/validate-binary-search-tree/"},
+            {id:102, name:"Binary Tree Level Order Traversal", diff:"Medium", link:"https://leetcode.com/problems/binary-tree-level-order-traversal/"},
+            {id:124, name:"Binary Tree Maximum Path Sum", diff:"Hard", link:"https://leetcode.com/problems/binary-tree-maximum-path-sum/"},
+            {id:139, name:"Word Break", diff:"Medium", link:"https://leetcode.com/problems/word-break/"},
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"},
+            {id:200, name:"Number of Islands", diff:"Medium", link:"https://leetcode.com/problems/number-of-islands/"}
+        ],
+        Google: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:3, name:"Longest Substring Without Repeating Characters", diff:"Medium", link:"https://leetcode.com/problems/longest-substring-without-repeating-characters/"},
+            {id:5, name:"Longest Palindromic Substring", diff:"Medium", link:"https://leetcode.com/problems/longest-palindromic-substring/"},
+            {id:10, name:"Regular Expression Matching", diff:"Hard", link:"https://leetcode.com/problems/regular-expression-matching/"},
+            {id:15, name:"3Sum", diff:"Medium", link:"https://leetcode.com/problems/3sum/"},
+            {id:23, name:"Merge k Sorted Lists", diff:"Hard", link:"https://leetcode.com/problems/merge-k-sorted-lists/"},
+            {id:33, name:"Search in Rotated Sorted Array", diff:"Medium", link:"https://leetcode.com/problems/search-in-rotated-sorted-array/"},
+            {id:42, name:"Trapping Rain Water", diff:"Hard", link:"https://leetcode.com/problems/trapping-rain-water/"},
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:76, name:"Minimum Window Substring", diff:"Hard", link:"https://leetcode.com/problems/minimum-window-substring/"},
+            {id:98, name:"Validate Binary Search Tree", diff:"Medium", link:"https://leetcode.com/problems/validate-binary-search-tree/"},
+            {id:124, name:"Binary Tree Maximum Path Sum", diff:"Hard", link:"https://leetcode.com/problems/binary-tree-maximum-path-sum/"},
+            {id:127, name:"Word Ladder", diff:"Hard", link:"https://leetcode.com/problems/word-ladder/"},
+            {id:139, name:"Word Break", diff:"Medium", link:"https://leetcode.com/problems/word-break/"},
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"},
+            {id:200, name:"Number of Islands", diff:"Medium", link:"https://leetcode.com/problems/number-of-islands/"},
+            {id:215, name:"Kth Largest Element in an Array", diff:"Medium", link:"https://leetcode.com/problems/kth-largest-element-in-an-array/"},
+            {id:269, name:"Alien Dictionary", diff:"Hard", link:"https://leetcode.com/problems/alien-dictionary/"},
+            {id:295, name:"Find Median from Data Stream", diff:"Hard", link:"https://leetcode.com/problems/find-median-from-data-stream/"},
+            {id:297, name:"Serialize and Deserialize Binary Tree", diff:"Hard", link:"https://leetcode.com/problems/serialize-and-deserialize-binary-tree/"}
+        ],
+        Microsoft: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:13, name:"Roman to Integer", diff:"Easy", link:"https://leetcode.com/problems/roman-to-integer/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:21, name:"Merge Two Sorted Lists", diff:"Easy", link:"https://leetcode.com/problems/merge-two-sorted-lists/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:70, name:"Climbing Stairs", diff:"Easy", link:"https://leetcode.com/problems/climbing-stairs/"},
+            {id:88, name:"Merge Sorted Array", diff:"Easy", link:"https://leetcode.com/problems/merge-sorted-array/"},
+            {id:98, name:"Validate Binary Search Tree", diff:"Medium", link:"https://leetcode.com/problems/validate-binary-search-tree/"},
+            {id:102, name:"Binary Tree Level Order Traversal", diff:"Medium", link:"https://leetcode.com/problems/binary-tree-level-order-traversal/"},
+            {id:124, name:"Binary Tree Maximum Path Sum", diff:"Hard", link:"https://leetcode.com/problems/binary-tree-maximum-path-sum/"},
+            {id:141, name:"Linked List Cycle", diff:"Easy", link:"https://leetcode.com/problems/linked-list-cycle/"},
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"},
+            {id:160, name:"Intersection of Two Linked Lists", diff:"Easy", link:"https://leetcode.com/problems/intersection-of-two-linked-lists/"},
+            {id:169, name:"Majority Element", diff:"Easy", link:"https://leetcode.com/problems/majority-element/"},
+            {id:206, name:"Reverse Linked List", diff:"Easy", link:"https://leetcode.com/problems/reverse-linked-list/"},
+            {id:217, name:"Contains Duplicate", diff:"Easy", link:"https://leetcode.com/problems/contains-duplicate/"},
+            {id:242, name:"Valid Anagram", diff:"Easy", link:"https://leetcode.com/problems/valid-anagram/"},
+            {id:268, name:"Missing Number", diff:"Easy", link:"https://leetcode.com/problems/missing-number/"},
+            {id:283, name:"Move Zeroes", diff:"Easy", link:"https://leetcode.com/problems/move-zeroes/"},
+            {id:560, name:"Subarray Sum Equals K", diff:"Medium", link:"https://leetcode.com/problems/subarray-sum-equals-k/"}
+        ],
+        Meta: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:3, name:"Longest Substring Without Repeating Characters", diff:"Medium", link:"https://leetcode.com/problems/longest-substring-without-repeating-characters/"},
+            {id:15, name:"3Sum", diff:"Medium", link:"https://leetcode.com/problems/3sum/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:23, name:"Merge k Sorted Lists", diff:"Hard", link:"https://leetcode.com/problems/merge-k-sorted-lists/"},
+            {id:42, name:"Trapping Rain Water", diff:"Hard", link:"https://leetcode.com/problems/trapping-rain-water/"},
+            {id:49, name:"Group Anagrams", diff:"Medium", link:"https://leetcode.com/problems/group-anagrams/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:76, name:"Minimum Window Substring", diff:"Hard", link:"https://leetcode.com/problems/minimum-window-substring/"},
+            {id:98, name:"Validate Binary Search Tree", diff:"Medium", link:"https://leetcode.com/problems/validate-binary-search-tree/"},
+            {id:102, name:"Binary Tree Level Order Traversal", diff:"Medium", link:"https://leetcode.com/problems/binary-tree-level-order-traversal/"},
+            {id:124, name:"Binary Tree Maximum Path Sum", diff:"Hard", link:"https://leetcode.com/problems/binary-tree-maximum-path-sum/"},
+            {id:138, name:"Copy List with Random Pointer", diff:"Medium", link:"https://leetcode.com/problems/copy-list-with-random-pointer/"},
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"},
+            {id:199, name:"Binary Tree Right Side View", diff:"Medium", link:"https://leetcode.com/problems/binary-tree-right-side-view/"},
+            {id:200, name:"Number of Islands", diff:"Medium", link:"https://leetcode.com/problems/number-of-islands/"},
+            {id:215, name:"Kth Largest Element in an Array", diff:"Medium", link:"https://leetcode.com/problems/kth-largest-element-in-an-array/"},
+            {id:236, name:"Lowest Common Ancestor of a Binary Tree", diff:"Medium", link:"https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/"},
+            {id:297, name:"Serialize and Deserialize Binary Tree", diff:"Hard", link:"https://leetcode.com/problems/serialize-and-deserialize-binary-tree/"}
+        ],
+        Apple: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:3, name:"Longest Substring Without Repeating Characters", diff:"Medium", link:"https://leetcode.com/problems/longest-substring-without-repeating-characters/"},
+            {id:11, name:"Container With Most Water", diff:"Medium", link:"https://leetcode.com/problems/container-with-most-water/"},
+            {id:15, name:"3Sum", diff:"Medium", link:"https://leetcode.com/problems/3sum/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:42, name:"Trapping Rain Water", diff:"Hard", link:"https://leetcode.com/problems/trapping-rain-water/"},
+            {id:49, name:"Group Anagrams", diff:"Medium", link:"https://leetcode.com/problems/group-anagrams/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:76, name:"Minimum Window Substring", diff:"Hard", link:"https://leetcode.com/problems/minimum-window-substring/"},
+            {id:121, name:"Best Time to Buy and Sell Stock", diff:"Easy", link:"https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"},
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"},
+            {id:200, name:"Number of Islands", diff:"Medium", link:"https://leetcode.com/problems/number-of-islands/"},
+            {id:217, name:"Contains Duplicate", diff:"Easy", link:"https://leetcode.com/problems/contains-duplicate/"},
+            {id:238, name:"Product of Array Except Self", diff:"Medium", link:"https://leetcode.com/problems/product-of-array-except-self/"}
+        ],
+        Flipkart: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:121, name:"Best Time to Buy and Sell Stock", diff:"Easy", link:"https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:70, name:"Climbing Stairs", diff:"Easy", link:"https://leetcode.com/problems/climbing-stairs/"},
+            {id:206, name:"Reverse Linked List", diff:"Easy", link:"https://leetcode.com/problems/reverse-linked-list/"},
+            {id:141, name:"Linked List Cycle", diff:"Easy", link:"https://leetcode.com/problems/linked-list-cycle/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:242, name:"Valid Anagram", diff:"Easy", link:"https://leetcode.com/problems/valid-anagram/"},
+            {id:125, name:"Valid Palindrome", diff:"Easy", link:"https://leetcode.com/problems/valid-palindrome/"},
+            {id:217, name:"Contains Duplicate", diff:"Easy", link:"https://leetcode.com/problems/contains-duplicate/"},
+            {id:169, name:"Majority Element", diff:"Easy", link:"https://leetcode.com/problems/majority-element/"},
+            {id:88, name:"Merge Sorted Array", diff:"Easy", link:"https://leetcode.com/problems/merge-sorted-array/"},
+            {id:283, name:"Move Zeroes", diff:"Easy", link:"https://leetcode.com/problems/move-zeroes/"},
+            {id:11, name:"Container With Most Water", diff:"Medium", link:"https://leetcode.com/problems/container-with-most-water/"},
+            {id:15, name:"3Sum", diff:"Medium", link:"https://leetcode.com/problems/3sum/"},
+            {id:33, name:"Search in Rotated Sorted Array", diff:"Medium", link:"https://leetcode.com/problems/search-in-rotated-sorted-array/"},
+            {id:54, name:"Spiral Matrix", diff:"Medium", link:"https://leetcode.com/problems/spiral-matrix/"},
+            {id:73, name:"Set Matrix Zeroes", diff:"Medium", link:"https://leetcode.com/problems/set-matrix-zeroes/"},
+            {id:200, name:"Number of Islands", diff:"Medium", link:"https://leetcode.com/problems/number-of-islands/"},
+            {id:102, name:"Binary Tree Level Order Traversal", diff:"Medium", link:"https://leetcode.com/problems/binary-tree-level-order-traversal/"}
+        ],
+        Adobe: [
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"},
+            {id:76, name:"Minimum Window Substring", diff:"Hard", link:"https://leetcode.com/problems/minimum-window-substring/"},
+            {id:239, name:"Sliding Window Maximum", diff:"Hard", link:"https://leetcode.com/problems/sliding-window-maximum/"},
+            {id:295, name:"Find Median from Data Stream", diff:"Hard", link:"https://leetcode.com/problems/find-median-from-data-stream/"},
+            {id:124, name:"Binary Tree Maximum Path Sum", diff:"Hard", link:"https://leetcode.com/problems/binary-tree-maximum-path-sum/"},
+            {id:84, name:"Largest Rectangle in Histogram", diff:"Hard", link:"https://leetcode.com/problems/largest-rectangle-in-histogram/"},
+            {id:42, name:"Trapping Rain Water", diff:"Hard", link:"https://leetcode.com/problems/trapping-rain-water/"},
+            {id:23, name:"Merge k Sorted Lists", diff:"Hard", link:"https://leetcode.com/problems/merge-k-sorted-lists/"},
+            {id:25, name:"Reverse Nodes in k-Group", diff:"Hard", link:"https://leetcode.com/problems/reverse-nodes-in-k-group/"},
+            {id:207, name:"Course Schedule", diff:"Medium", link:"https://leetcode.com/problems/course-schedule/"},
+            {id:210, name:"Course Schedule II", diff:"Medium", link:"https://leetcode.com/problems/course-schedule-ii/"},
+            {id:215, name:"Kth Largest Element in an Array", diff:"Medium", link:"https://leetcode.com/problems/kth-largest-element-in-an-array/"},
+            {id:4, name:"Median of Two Sorted Arrays", diff:"Hard", link:"https://leetcode.com/problems/median-of-two-sorted-arrays/"},
+            {id:10, name:"Regular Expression Matching", diff:"Hard", link:"https://leetcode.com/problems/regular-expression-matching/"},
+            {id:72, name:"Edit Distance", diff:"Medium", link:"https://leetcode.com/problems/edit-distance/"},
+            {id:139, name:"Word Break", diff:"Medium", link:"https://leetcode.com/problems/word-break/"},
+            {id:140, name:"Word Break II", diff:"Hard", link:"https://leetcode.com/problems/word-break-ii/"},
+            {id:127, name:"Word Ladder", diff:"Hard", link:"https://leetcode.com/problems/word-ladder/"},
+            {id:269, name:"Alien Dictionary", diff:"Hard", link:"https://leetcode.com/problems/alien-dictionary/"},
+            {id:297, name:"Serialize and Deserialize Binary Tree", diff:"Hard", link:"https://leetcode.com/problems/serialize-and-deserialize-binary-tree/"},
+            {id:480, name:"Sliding Window Median", diff:"Hard", link:"https://leetcode.com/problems/sliding-window-median/"},
+            {id:895, name:"Maximum Frequency Stack", diff:"Hard", link:"https://leetcode.com/problems/maximum-frequency-stack/"},
+            {id:460, name:"LFU Cache", diff:"Hard", link:"https://leetcode.com/problems/lfu-cache/"},
+            {id:632, name:"Smallest Range Covering Elements from K Lists", diff:"Hard", link:"https://leetcode.com/problems/smallest-range-covering-elements-from-k-lists/"},
+            {id:315, name:"Count of Smaller Numbers After Self", diff:"Hard", link:"https://leetcode.com/problems/count-of-smaller-numbers-after-self/"}
+        ],
+        Uber: [
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:139, name:"Word Break", diff:"Medium", link:"https://leetcode.com/problems/word-break/"},
+            {id:721, name:"Accounts Merge", diff:"Medium", link:"https://leetcode.com/problems/accounts-merge/"},
+            {id:127, name:"Word Ladder", diff:"Hard", link:"https://leetcode.com/problems/word-ladder/"},
+            {id:347, name:"Top K Frequent Elements", diff:"Medium", link:"https://leetcode.com/problems/top-k-frequent-elements/"},
+            {id:253, name:"Meeting Rooms II", diff:"Medium", link:"https://leetcode.com/problems/meeting-rooms-ii/"},
+            {id:973, name:"K Closest Points to Origin", diff:"Medium", link:"https://leetcode.com/problems/k-closest-points-to-origin/"},
+            {id:200, name:"Number of Islands", diff:"Medium", link:"https://leetcode.com/problems/number-of-islands/"},
+            {id:79, name:"Word Search", diff:"Medium", link:"https://leetcode.com/problems/word-search/"},
+            {id:22, name:"Generate Parentheses", diff:"Medium", link:"https://leetcode.com/problems/generate-parentheses/"},
+            {id:39, name:"Combination Sum", diff:"Medium", link:"https://leetcode.com/problems/combination-sum/"},
+            {id:46, name:"Permutations", diff:"Medium", link:"https://leetcode.com/problems/permutations/"},
+            {id:78, name:"Subsets", diff:"Medium", link:"https://leetcode.com/problems/subsets/"},
+            {id:560, name:"Subarray Sum Equals K", diff:"Medium", link:"https://leetcode.com/problems/subarray-sum-equals-k/"},
+            {id:128, name:"Longest Consecutive Sequence", diff:"Medium", link:"https://leetcode.com/problems/longest-consecutive-sequence/"},
+            {id:42, name:"Trapping Rain Water", diff:"Hard", link:"https://leetcode.com/problems/trapping-rain-water/"},
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"},
+            {id:380, name:"Insert Delete GetRandom O(1)", diff:"Medium", link:"https://leetcode.com/problems/insert-delete-getrandom-o1/"},
+            {id:295, name:"Find Median from Data Stream", diff:"Hard", link:"https://leetcode.com/problems/find-median-from-data-stream/"},
+            {id:124, name:"Binary Tree Maximum Path Sum", diff:"Hard", link:"https://leetcode.com/problems/binary-tree-maximum-path-sum/"},
+            {id:23, name:"Merge k Sorted Lists", diff:"Hard", link:"https://leetcode.com/problems/merge-k-sorted-lists/"},
+            {id:84, name:"Largest Rectangle in Histogram", diff:"Hard", link:"https://leetcode.com/problems/largest-rectangle-in-histogram/"}
+        ],
+        Samsung: [
+            {id:200, name:"Number of Islands", diff:"Medium", link:"https://leetcode.com/problems/number-of-islands/"},
+            {id:733, name:"Flood Fill", diff:"Easy", link:"https://leetcode.com/problems/flood-fill/"},
+            {id:130, name:"Surrounded Regions", diff:"Medium", link:"https://leetcode.com/problems/surrounded-regions/"},
+            {id:994, name:"Rotting Oranges", diff:"Medium", link:"https://leetcode.com/problems/rotting-oranges/"},
+            {id:79, name:"Word Search", diff:"Medium", link:"https://leetcode.com/problems/word-search/"},
+            {id:51, name:"N-Queens", diff:"Hard", link:"https://leetcode.com/problems/n-queens/"},
+            {id:37, name:"Sudoku Solver", diff:"Hard", link:"https://leetcode.com/problems/sudoku-solver/"},
+            {id:46, name:"Permutations", diff:"Medium", link:"https://leetcode.com/problems/permutations/"},
+            {id:39, name:"Combination Sum", diff:"Medium", link:"https://leetcode.com/problems/combination-sum/"},
+            {id:78, name:"Subsets", diff:"Medium", link:"https://leetcode.com/problems/subsets/"},
+            {id:54, name:"Spiral Matrix", diff:"Medium", link:"https://leetcode.com/problems/spiral-matrix/"},
+            {id:48, name:"Rotate Image", diff:"Medium", link:"https://leetcode.com/problems/rotate-image/"},
+            {id:73, name:"Set Matrix Zeroes", diff:"Medium", link:"https://leetcode.com/problems/set-matrix-zeroes/"},
+            {id:102, name:"Binary Tree Level Order Traversal", diff:"Medium", link:"https://leetcode.com/problems/binary-tree-level-order-traversal/"},
+            {id:207, name:"Course Schedule", diff:"Medium", link:"https://leetcode.com/problems/course-schedule/"},
+            {id:417, name:"Pacific Atlantic Water Flow", diff:"Medium", link:"https://leetcode.com/problems/pacific-atlantic-water-flow/"},
+            {id:547, name:"Number of Provinces", diff:"Medium", link:"https://leetcode.com/problems/number-of-provinces/"},
+            {id:300, name:"Longest Increasing Subsequence", diff:"Medium", link:"https://leetcode.com/problems/longest-increasing-subsequence/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"}
+        ],
+        Intuit: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:21, name:"Merge Two Sorted Lists", diff:"Easy", link:"https://leetcode.com/problems/merge-two-sorted-lists/"},
+            {id:121, name:"Best Time to Buy and Sell Stock", diff:"Easy", link:"https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:70, name:"Climbing Stairs", diff:"Easy", link:"https://leetcode.com/problems/climbing-stairs/"},
+            {id:206, name:"Reverse Linked List", diff:"Easy", link:"https://leetcode.com/problems/reverse-linked-list/"},
+            {id:217, name:"Contains Duplicate", diff:"Easy", link:"https://leetcode.com/problems/contains-duplicate/"},
+            {id:238, name:"Product of Array Except Self", diff:"Medium", link:"https://leetcode.com/problems/product-of-array-except-self/"},
+            {id:49, name:"Group Anagrams", diff:"Medium", link:"https://leetcode.com/problems/group-anagrams/"},
+            {id:3, name:"Longest Substring Without Repeating Characters", diff:"Medium", link:"https://leetcode.com/problems/longest-substring-without-repeating-characters/"},
+            {id:242, name:"Valid Anagram", diff:"Easy", link:"https://leetcode.com/problems/valid-anagram/"},
+            {id:704, name:"Binary Search", diff:"Easy", link:"https://leetcode.com/problems/binary-search/"},
+            {id:198, name:"House Robber", diff:"Medium", link:"https://leetcode.com/problems/house-robber/"},
+            {id:322, name:"Coin Change", diff:"Medium", link:"https://leetcode.com/problems/coin-change/"},
+            {id:104, name:"Maximum Depth of Binary Tree", diff:"Easy", link:"https://leetcode.com/problems/maximum-depth-of-binary-tree/"},
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:215, name:"Kth Largest Element in an Array", diff:"Medium", link:"https://leetcode.com/problems/kth-largest-element-in-an-array/"},
+            {id:15, name:"3Sum", diff:"Medium", link:"https://leetcode.com/problems/3sum/"},
+            {id:146, name:"LRU Cache", diff:"Medium", link:"https://leetcode.com/problems/lru-cache/"}
+        ],
+        Paytm: [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:206, name:"Reverse Linked List", diff:"Easy", link:"https://leetcode.com/problems/reverse-linked-list/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:21, name:"Merge Two Sorted Lists", diff:"Easy", link:"https://leetcode.com/problems/merge-two-sorted-lists/"},
+            {id:70, name:"Climbing Stairs", diff:"Easy", link:"https://leetcode.com/problems/climbing-stairs/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:121, name:"Best Time to Buy and Sell Stock", diff:"Easy", link:"https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"},
+            {id:217, name:"Contains Duplicate", diff:"Easy", link:"https://leetcode.com/problems/contains-duplicate/"},
+            {id:141, name:"Linked List Cycle", diff:"Easy", link:"https://leetcode.com/problems/linked-list-cycle/"},
+            {id:88, name:"Merge Sorted Array", diff:"Easy", link:"https://leetcode.com/problems/merge-sorted-array/"},
+            {id:189, name:"Rotate Array", diff:"Medium", link:"https://leetcode.com/problems/rotate-array/"},
+            {id:169, name:"Majority Element", diff:"Easy", link:"https://leetcode.com/problems/majority-element/"},
+            {id:136, name:"Single Number", diff:"Easy", link:"https://leetcode.com/problems/single-number/"},
+            {id:268, name:"Missing Number", diff:"Easy", link:"https://leetcode.com/problems/missing-number/"},
+            {id:387, name:"First Unique Character in a String", diff:"Easy", link:"https://leetcode.com/problems/first-unique-character-in-a-string/"}
+        ],
+        "DE Shaw": [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:15, name:"3Sum", diff:"Medium", link:"https://leetcode.com/problems/3sum/"},
+            {id:42, name:"Trapping Rain Water", diff:"Hard", link:"https://leetcode.com/problems/trapping-rain-water/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:62, name:"Unique Paths", diff:"Medium", link:"https://leetcode.com/problems/unique-paths/"},
+            {id:64, name:"Minimum Path Sum", diff:"Medium", link:"https://leetcode.com/problems/minimum-path-sum/"},
+            {id:72, name:"Edit Distance", diff:"Medium", link:"https://leetcode.com/problems/edit-distance/"},
+            {id:74, name:"Search a 2D Matrix", diff:"Medium", link:"https://leetcode.com/problems/search-a-2d-matrix/"},
+            {id:121, name:"Best Time to Buy and Sell Stock", diff:"Easy", link:"https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"},
+            {id:128, name:"Longest Consecutive Sequence", diff:"Medium", link:"https://leetcode.com/problems/longest-consecutive-sequence/"},
+            {id:300, name:"Longest Increasing Subsequence", diff:"Medium", link:"https://leetcode.com/problems/longest-increasing-subsequence/"},
+            {id:322, name:"Coin Change", diff:"Medium", link:"https://leetcode.com/problems/coin-change/"},
+            {id:238, name:"Product of Array Except Self", diff:"Medium", link:"https://leetcode.com/problems/product-of-array-except-self/"},
+            {id:162, name:"Find Peak Element", diff:"Medium", link:"https://leetcode.com/problems/find-peak-element/"},
+            {id:190, name:"Reverse Bits", diff:"Easy", link:"https://leetcode.com/problems/reverse-bits/"},
+            {id:191, name:"Number of 1 Bits", diff:"Easy", link:"https://leetcode.com/problems/number-of-1-bits/"},
+            {id:371, name:"Sum of Two Integers", diff:"Medium", link:"https://leetcode.com/problems/sum-of-two-integers/"},
+            {id:338, name:"Counting Bits", diff:"Easy", link:"https://leetcode.com/problems/counting-bits/"},
+            {id:55, name:"Jump Game", diff:"Medium", link:"https://leetcode.com/problems/jump-game/"}
+        ],
+        "Morgan Stanley": [
+            {id:1, name:"Two Sum", diff:"Easy", link:"https://leetcode.com/problems/two-sum/"},
+            {id:2, name:"Add Two Numbers", diff:"Medium", link:"https://leetcode.com/problems/add-two-numbers/"},
+            {id:20, name:"Valid Parentheses", diff:"Easy", link:"https://leetcode.com/problems/valid-parentheses/"},
+            {id:53, name:"Maximum Subarray", diff:"Medium", link:"https://leetcode.com/problems/maximum-subarray/"},
+            {id:70, name:"Climbing Stairs", diff:"Easy", link:"https://leetcode.com/problems/climbing-stairs/"},
+            {id:121, name:"Best Time to Buy and Sell Stock", diff:"Easy", link:"https://leetcode.com/problems/best-time-to-buy-and-sell-stock/"},
+            {id:206, name:"Reverse Linked List", diff:"Easy", link:"https://leetcode.com/problems/reverse-linked-list/"},
+            {id:217, name:"Contains Duplicate", diff:"Easy", link:"https://leetcode.com/problems/contains-duplicate/"},
+            {id:56, name:"Merge Intervals", diff:"Medium", link:"https://leetcode.com/problems/merge-intervals/"},
+            {id:198, name:"House Robber", diff:"Medium", link:"https://leetcode.com/problems/house-robber/"},
+            {id:322, name:"Coin Change", diff:"Medium", link:"https://leetcode.com/problems/coin-change/"},
+            {id:1143, name:"Longest Common Subsequence", diff:"Medium", link:"https://leetcode.com/problems/longest-common-subsequence/"},
+            {id:704, name:"Binary Search", diff:"Easy", link:"https://leetcode.com/problems/binary-search/"},
+            {id:21, name:"Merge Two Sorted Lists", diff:"Easy", link:"https://leetcode.com/problems/merge-two-sorted-lists/"},
+            {id:48, name:"Rotate Image", diff:"Medium", link:"https://leetcode.com/problems/rotate-image/"}
+        ]
+    };
+
+    /* Render company grid */
+    function renderCompanyGrid() {
+        var grid = document.getElementById('cq-grid');
+        grid.innerHTML = '';
+        companyMeta.forEach(function(c) {
+            var qs = companyQuestions[c.key] || [];
+            var card = document.createElement('div');
+            card.className = 'dsa-company-card';
+            card.onclick = function(){ showCompanyProblems(c.key); };
+            card.innerHTML = '<div class="dsa-company-logo" style="width:36px;height:36px;border-radius:var(--radius-md);background:' + c.color + '18;color:' + c.color + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;font-family:var(--font-mono);">' + c.icon + '</div>'
+                + '<div class="dsa-company-name">' + c.key + '</div>'
+                + '<div class="dsa-company-meta">' + qs.length + ' frequently asked problems</div>';
+            grid.appendChild(card);
+        });
+    }
+
+    /* Show problems for a company */
+    window.showCompanyProblems = function(companyKey) {
+        var meta = companyMeta.find(function(c){ return c.key === companyKey; });
+        if (!meta) return;
+        var qs = companyQuestions[companyKey] || [];
+
+        /* Header */
+        var header = document.getElementById('cq-header');
+        header.innerHTML = '<div class="cq-company-badge" style="background:' + meta.color + '18;color:' + meta.color + ';">' + meta.icon + '</div>'
+            + '<div><div class="cq-company-title">' + companyKey + '</div>'
+            + '<div class="cq-company-count">' + qs.length + ' problems</div></div>';
+
+        /* Problem list */
+        var list = document.getElementById('cq-list');
+        list.innerHTML = '';
+        qs.forEach(function(q) {
+            var diffClass = q.diff === 'Easy' ? 'cq-easy' : (q.diff === 'Hard' ? 'cq-hard' : 'cq-medium');
+            var a = document.createElement('a');
+            a.className = 'cq-item';
+            a.href = q.link;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.innerHTML = '<span class="cq-oval ' + diffClass + '">' + q.id + '</span>'
+                + '<span class="cq-problem-name">' + q.name + '</span>'
+                + '<svg class="cq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+            list.appendChild(a);
+        });
+
+        /* Toggle views */
+        document.getElementById('cq-grid').style.display = 'none';
+        document.getElementById('cq-panel').classList.add('active');
+
+        /* Also filter Problems Roadmap table by company name */
+        var searchInput = document.getElementById('dsa-problem-search');
+        if (searchInput) {
+            searchInput.value = companyKey.toLowerCase();
+            searchProblems(companyKey.toLowerCase());
+        }
+
+        /* Scroll to company section */
+        document.getElementById('company-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    /* Back to company grid */
+    window.showCompanyGrid = function() {
+        document.getElementById('cq-panel').classList.remove('active');
+        document.getElementById('cq-grid').style.display = '';
+
+        /* Clear the roadmap filter */
+        var searchInput = document.getElementById('dsa-problem-search');
+        if (searchInput) {
+            searchInput.value = '';
+            searchProblems('');
+        }
+    };
+
+    /* Init */
+    renderCompanyGrid();
+})();
+</script>
+{% endblock %}

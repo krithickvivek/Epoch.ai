@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+*.db
+.pytest_cache/
+.claude/
+cookies.txt
+tempcookies*.txt
+*.egg-info/
+dist/
+build/
+test_hf*.py

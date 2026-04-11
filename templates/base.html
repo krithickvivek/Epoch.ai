@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <!-- Flash-prevention: apply saved theme before paint. Click handler lives in app.js -->
+    <script>
+    (function(){
+      var s=localStorage.getItem('epoch-theme');
+      var t=s||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+      document.documentElement.setAttribute('data-theme',t);
+    })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Epoch â€” AI-powered adaptive learning{% endblock %}</title>
+    <meta name="description" content="Learn. Adapt. Improve.">
+    <link rel="stylesheet" href="/static/css/style.css?v=42">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+<body class="grain">
+    {% if user %}
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <!-- Brand -->
+            <div class="sidebar-brand">
+                <div class="sidebar-mark"><svg width="24" height="24" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,18 7,13 11,15 16,8 20,4"/><polyline points="16,4 20,4 20,8"/><circle cx="2" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="7" cy="13" r="1.4" fill="currentColor" stroke="none"/><circle cx="11" cy="15" r="1.4" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none"/><line x1="7" y1="13" x2="16" y2="8" stroke-width="1" opacity="0.35" stroke-dasharray="1.5,2"/></svg></div>
+                <div>
+                    <div class="sidebar-name">Epoch<span class="sidebar-ext">.ai</span></div>
+                    <div class="sidebar-motto">Learn. Adapt. Improve.</div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+                <a href="/home" class="sidebar-nav-item {% if active_page == 'home' %}active{% endif %}" title="Home">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span class="sidebar-nav-label">Home</span>
+                </a>
+                <a href="/dashboard" class="sidebar-nav-item {% if active_page == 'dashboard' %}active{% endif %}" title="Dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span class="sidebar-nav-label">Dashboard</span>
+                </a>
+                <a href="/learning" class="sidebar-nav-item {% if active_page == 'learning' %}active{% endif %}" title="Learning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    <span class="sidebar-nav-label">Learning</span>
+                </a>
+                <a href="/quiz" class="sidebar-nav-item {% if active_page == 'quiz' %}active{% endif %}" title="Quizzes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span class="sidebar-nav-label">Quizzes</span>
+                </a>
+                <a href="/growth" class="sidebar-nav-item {% if active_page == 'growth' %}active{% endif %}" title="Growth">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                    <span class="sidebar-nav-label">Growth</span>
+                </a>
+                <a href="/dsa-roadmap" class="sidebar-nav-item {% if active_page == 'dsa_roadmap' %}active{% endif %}" title="DSA Roadmap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    <span class="sidebar-nav-label">DSA</span>
+                </a>
+                <a href="/company-prep" class="sidebar-nav-item {% if active_page == 'company_prep' %}active{% endif %}" title="Company Prep">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                    <span class="sidebar-nav-label">Companies</span>
+                </a>
+                <a href="/mock-tests" class="sidebar-nav-item {% if active_page == 'mock_tests' %}active{% endif %}" title="Mock Tests">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <span class="sidebar-nav-label">Mock Tests</span>
+                </a>
+                <a href="/daily-planner" class="sidebar-nav-item {% if active_page == 'daily_planner' %}active{% endif %}" title="Daily Planner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="sidebar-nav-label">Planner</span>
+                </a>
+                <a href="/interview-sim" class="sidebar-nav-item {% if active_page == 'interview_sim' %}active{% endif %}" title="Interview Simulator">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span class="sidebar-nav-label">Interview</span>
+                </a>
+                <a href="/simulation" class="sidebar-nav-item {% if active_page == 'simulation' %}active{% endif %}" title="AI Simulation">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    <span class="sidebar-nav-label">AI Sim</span>
+                </a>
+                <a href="/api-explorer" class="sidebar-nav-item {% if active_page == 'api_explorer' %}active{% endif %}" title="API Explorer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    <span class="sidebar-nav-label">API</span>
+                </a>
+            </nav>
+
+            <!-- Footer: collapse toggle + user -->
+            <div class="sidebar-footer">
+                <button class="sidebar-collapse-row" id="sidebar-toggle" title="Collapse sidebar">
+                    <svg class="sidebar-collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><polyline points="15 10 13 12 15 14"/></svg>
+                    <span class="sidebar-nav-label">Collapse</span>
+                </button>
+                <div class="sidebar-divider"></div>
+                <a href="/profile" class="sidebar-nav-item" title="{{ user.name }}">
+                    {% if user.profile_pic %}
+                    <img src="{{ user.profile_pic }}" class="sidebar-user-pic" alt="">
+                    {% else %}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    {% endif %}
+                    <span class="sidebar-nav-label">{{ user.name }}</span>
+                </a>
+            </div>
+        </aside>
+
+        <div class="main">
+            <!-- Topbar -->
+            <header class="topbar">
+                {% if active_page == 'learning' %}
+                <div class="topbar-search" style="position:relative;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="search-input" placeholder="Search topics..." autocomplete="off">
+                    <div id="search-results" class="search-dropdown" style="display:none;"></div>
+                </div>
+                {% endif %}
+                <div class="topbar-spacer"></div>
+                <div class="ai-status" title="3 RL agents actively adapting your learning path">
+                    <span class="ai-dot"></span>
+                    <span class="ai-status-text">AI Active</span>
+                    <span class="ai-agent-count">3 agents</span>
+                </div>
+                <button id="theme-toggle"></button>
+                <a href="/profile" class="user-pill">
+                    {% if user.profile_pic %}
+                    <img src="{{ user.profile_pic }}" class="user-pill-pic" alt="">
+                    {% else %}
+                    <div class="user-pill-avatar">{{ user.name[0] | upper }}</div>
+                    {% endif %}
+                    <span>{{ user.name }}</span>
+                </a>
+                <a href="/logout" class="btn-logout">Logout</a>
+            </header>
+
+            <!-- Content -->
+            <main class="content">
+                <div id="alerts"></div>
+    {% else %}
+    <div id="alerts"></div>
+    <main class="main-no-nav">
+    {% endif %}
+                {% block content %}{% endblock %}
+    {% if user %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    </main>
+    {% endif %}
+
+    {% if user %}
+    <div id="ai-chat-widget" class="ai-chat-widget">
+        <button id="ai-chat-toggle" class="ai-chat-toggle" aria-label="Open Epoch AI" title="Ask Epoch AI">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+                <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/>
+                <path d="M9 14c1.5 1.2 4.5 1.2 6 0" stroke-width="1.5"/>
+            </svg>
+        </button>
+        <section id="ai-chat-panel" class="ai-chat-panel" hidden>
+            <div class="ai-chat-header">
+                <div class="ai-chat-header-info">
+                    <div class="ai-chat-avatar">
+                        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,18 7,13 11,15 16,8 20,4"/><polyline points="16,4 20,4 20,8"/><circle cx="7" cy="13" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/></svg>
+                    </div>
+                    <div>
+                        <div class="ai-chat-title">Epoch AI</div>
+                        <div class="ai-chat-status"><span class="ai-chat-status-dot"></span>Online</div>
+                    </div>
+                </div>
+                <button id="ai-chat-close" type="button" aria-label="Close chat">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>
+                </button>
+            </div>
+            <div id="ai-chat-messages" class="ai-chat-messages">
+                <div class="ai-chat-welcome">
+                    <div class="ai-chat-welcome-icon">
+                        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,18 7,13 11,15 16,8 20,4"/><polyline points="16,4 20,4 20,8"/></svg>
+                    </div>
+                    <strong>Hey there!</strong>
+                    <p>I'm your Epoch AI assistant. Ask me about DSA, interview prep, company strategies, or anything placement-related.</p>
+                </div>
+            </div>
+            <div id="ai-chat-typing" class="ai-chat-typing" hidden>
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+                <span class="typing-label">Epoch AI is thinking...</span>
+            </div>
+            <form id="ai-chat-form" class="ai-chat-form">
+                <input id="ai-chat-input" type="text" maxlength="500" placeholder="Ask me anything..." required autocomplete="off">
+                <button type="submit" class="ai-chat-send" title="Send message">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+            </form>
+        </section>
+    </div>
+    {% endif %}
+
+    <script src="/static/js/app.js"></script>
+    {% if user %}
+    <script>
+    (function(){
+        const input = document.getElementById('search-input');
+        const dropdown = document.getElementById('search-results');
+        if (!input || !dropdown) return;
+        let debounce = null;
+
+        input.addEventListener('input', function(){
+            clearTimeout(debounce);
+            const q = this.value.trim();
+            if (q.length < 2) { dropdown.style.display = 'none'; return; }
+            debounce = setTimeout(()=>{
+                fetch('/api/search?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.results || data.results.length === 0) {
+                        dropdown.innerHTML = '<div class="search-no-results">No results found</div>';
+                        dropdown.style.display = 'block';
+                        return;
+                    }
+                    let html = '';
+                    data.results.forEach(r => {
+                        if (r.type === 'topic') {
+                            html += `<a href="${r.url}" class="search-item search-item-topic">
+                                <span class="search-item-badge">Topic</span>
+                                <span class="search-item-name">${r.name}</span>
+                                <span class="search-item-group">${r.group}</span>
+                            </a>`;
+                        } else {
+                            html += `<a href="${r.url}" class="search-item search-item-page">
+                                <span class="search-item-badge search-badge-page">Page</span>
+                                <span class="search-item-name">${r.name}</span>
+                            </a>`;
+                        }
+                    });
+                    dropdown.innerHTML = html;
+                    dropdown.style.display = 'block';
+                })
+                .catch(()=>{ dropdown.style.display = 'none'; });
+            }, 200);
+        });
+
+        document.addEventListener('click', function(e){
+            if (!e.target.closest('.topbar-search')) dropdown.style.display = 'none';
+        });
+
+        input.addEventListener('keydown', function(e){
+            if (e.key === 'Escape') { dropdown.style.display = 'none'; input.blur(); }
+        });
+    })();
+    </script>
+    <script>
+    (function(){
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebar-toggle');
+        if (!sidebar || !toggle) return;
+        // Restore state
+        if (localStorage.getItem('epoch-sidebar-collapsed') === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+        toggle.addEventListener('click', function(){
+            const next = !sidebar.classList.contains('collapsed');
+            sidebar.classList.toggle('collapsed', next);
+            localStorage.setItem('epoch-sidebar-collapsed', String(next));
+        });
+
+        // Auto-collapse when window is narrow
+        function checkAutoCollapse(){
+            if(window.innerWidth < 1100 && !sidebar.classList.contains('collapsed')){
+                sidebar.classList.add('collapsed');
+                localStorage.setItem('epoch-sidebar-collapsed', 'true');
+            }
+        }
+        checkAutoCollapse();
+        window.addEventListener('resize', checkAutoCollapse);
+    })();
+    </script>
+    <script>
+    (function(){
+        const toggle = document.getElementById('ai-chat-toggle');
+        const closeBtn = document.getElementById('ai-chat-close');
+        const widget = document.getElementById('ai-chat-widget');
+        const panel = document.getElementById('ai-chat-panel');
+        const form = document.getElementById('ai-chat-form');
+        const input = document.getElementById('ai-chat-input');
+        const box = document.getElementById('ai-chat-messages');
+        const typingEl = document.getElementById('ai-chat-typing');
+        if (!toggle || !widget || !panel || !form || !input || !box) return;
+
+        /* ── conversation history (kept in-memory per session) ── */
+        const conversationHistory = [];
+
+        function addMessage(text, role) {
+            const msg = document.createElement('div');
+            msg.className = role === 'user' ? 'ai-chat-msg ai-chat-user' : 'ai-chat-msg ai-chat-bot';
+            msg.textContent = text;
+            box.appendChild(msg);
+            box.scrollTop = box.scrollHeight;
+            return msg;
+        }
+
+        function showTyping(show) {
+            if (typingEl) typingEl.hidden = !show;
+            if (show) box.scrollTop = box.scrollHeight;
+        }
+
+        function buildLocalReply(userText) {
+            const msg = (userText || '').toLowerCase();
+            if (msg.includes('layoff') || msg.includes('laid off') || msg.includes('job loss'))
+                return 'Let me help you build a recovery plan: refresh your resume, practice 2 core topics daily in Learning, attempt 1 quiz per day, and apply to focused roles. Tell me your target role and I\'ll create a step-by-step roadmap.';
+            if (msg.includes('interview') || msg.includes('hr round') || msg.includes('technical'))
+                return 'For interview prep: revise your top 3 weak topics on the DSA Roadmap, do a timed quiz, and practice STAR stories for HR rounds. Check out Interview Sim for practice. Share your target role for a custom checklist!';
+            if (msg.includes('dsa') || msg.includes('data structure') || msg.includes('algorithm') || msg.includes('leetcode'))
+                return 'Head to the DSA Roadmap for 170+ curated problems sorted by pattern. Start with Arrays & Hashing, then move to Two Pointers and Sliding Window. Focus on understanding patterns, not memorizing solutions!';
+            if (msg.includes('company') || msg.includes('tcs') || msg.includes('infosys') || msg.includes('amazon') || msg.includes('google'))
+                return 'Check out Company Prep for detailed strategies, exam patterns, and curated problem lists for each company. The DSA Roadmap also has company-tagged problems you can filter!';
+            if (msg.includes('quiz') || msg.includes('mcq') || msg.includes('test'))
+                return 'Use the AI Quiz Generator: pick a topic, set difficulty, and practice! After each attempt, review explanations and retry with higher difficulty. Consistency beats intensity.';
+            if (msg.includes('plan') || msg.includes('schedule') || msg.includes('study') || msg.includes('roadmap'))
+                return 'Try a weekly structure: 5 study days + 1 revision day + 1 mock day. Each study day: 60 min concepts + 45 min practice + 15 min error review. Use the Daily Planner to stay on track!';
+            if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey'))
+                return 'Hey there! I\'m your Epoch AI assistant. I can help with DSA doubts, interview prep, study plans, company strategies, and more. What would you like to work on today?';
+            return 'I can help with DSA concepts, interview prep, company strategies, quizzes, and study plans. Ask me a specific question and I\'ll give you practical, actionable advice!';
+        }
+
+        function setOpen(isOpen) {
+            panel.hidden = !isOpen;
+            widget.classList.toggle('open', isOpen);
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            if (isOpen) { input.focus(); box.scrollTop = box.scrollHeight; }
+        }
+
+        setOpen(false);
+        toggle.addEventListener('click', function(){ setOpen(panel.hidden); });
+        if (closeBtn) closeBtn.addEventListener('click', function(){ setOpen(false); });
+        document.addEventListener('keydown', function(e){
+            if (e.key === 'Escape' && !panel.hidden) setOpen(false);
+        });
+
+        form.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+            addMessage(text, 'user');
+            conversationHistory.push({role: 'user', content: text});
+            input.value = '';
+            input.focus();
+            input.disabled = true;
+            form.querySelector('.ai-chat-send').disabled = true;
+
+            showTyping(true);
+            try {
+                const resp = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: text, history: conversationHistory.slice(-8)})
+                });
+                showTyping(false);
+                let data = {};
+                const ctype = (resp.headers.get('content-type') || '').toLowerCase();
+                if (ctype.includes('application/json')) {
+                    data = await resp.json();
+                } else {
+                    data.reply = ((await resp.text()) || '').trim();
+                }
+                const reply = (data.reply || '').toString().trim() || buildLocalReply(text);
+                addMessage(reply, 'bot');
+                conversationHistory.push({role: 'assistant', content: reply});
+            } catch (err) {
+                showTyping(false);
+                const fallback = buildLocalReply(text);
+                addMessage(fallback, 'bot');
+                conversationHistory.push({role: 'assistant', content: fallback});
+            } finally {
+                input.disabled = false;
+                form.querySelector('.ai-chat-send').disabled = false;
+                input.focus();
+            }
+        });
+    })();
+    </script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

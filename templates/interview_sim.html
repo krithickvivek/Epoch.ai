@@ -1,0 +1,1600 @@
+{% extends "base.html" %}
+{% block title %}Interview Simulator — Epoch{% endblock %}
+
+{% block head %}
+<style>
+/* ── Interview Simulator Styles ── */
+
+/* Setup Mode */
+.iv-setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+@media (max-width: 860px) { .iv-setup-grid { grid-template-columns: 1fr; } }
+
+.iv-config-card {
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+.iv-config-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.iv-field {
+  margin-bottom: 14px;
+}
+.iv-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.iv-field select,
+.iv-field input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-input, var(--bg-surface));
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  transition: border-color var(--duration-fast) ease;
+}
+.iv-field select:focus,
+.iv-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+.iv-company-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.iv-company-btn {
+  padding: 12px 8px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--duration-fast) ease;
+}
+.iv-company-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+.iv-company-btn.selected {
+  border-color: var(--accent);
+  background: var(--cobalt-muted);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: var(--cobalt-shadow);
+}
+
+.iv-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.iv-chip {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+.iv-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.iv-chip.selected {
+  border-color: var(--accent);
+  background: var(--cobalt-muted);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.iv-start-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 32px;
+  border-radius: var(--radius-md);
+  background: var(--gradient-accent);
+  color: var(--text-on-cobalt);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  box-shadow: var(--cobalt-shadow);
+  transition: all var(--duration-base) var(--ease-out-expo);
+}
+.iv-start-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(30, 84, 183, 0.28);
+}
+.iv-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* History Cards */
+.iv-history-section {
+  margin-top: 32px;
+}
+.iv-history-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 14px;
+}
+.iv-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.iv-history-card {
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--duration-base) ease;
+}
+.iv-history-card:hover {
+  box-shadow: var(--card-hover-shadow);
+}
+.iv-history-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.iv-history-company {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+.iv-history-grade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+}
+.iv-grade-A { background: rgba(39, 174, 96, 0.15); color: #27AE60; }
+.iv-grade-B { background: rgba(30, 84, 183, 0.12); color: var(--accent); }
+.iv-grade-C { background: rgba(243, 156, 18, 0.15); color: #F39C12; }
+.iv-grade-D { background: rgba(231, 76, 60, 0.15); color: #E74C3C; }
+.iv-history-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.iv-history-score-bar {
+  height: 6px;
+  background: var(--progress-track);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.iv-history-score-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 0.6s var(--ease-out-expo);
+}
+
+/* ── Active Interview Mode ── */
+.iv-active-shell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: calc(100vh - 120px);
+  margin: -24px -24px 0 -24px;
+}
+@media (max-width: 960px) {
+  .iv-active-shell { grid-template-columns: 1fr; min-height: auto; margin: 0; }
+}
+
+.iv-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--bg-nav);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.iv-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.iv-topbar-company {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-on-graphite);
+}
+.iv-topbar-round {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(74, 138, 255, 0.18);
+  color: #4A8AFF;
+}
+.iv-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.iv-timer {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-on-graphite);
+  letter-spacing: 0.05em;
+}
+.iv-timer.warning { color: #F39C12; }
+.iv-timer.critical { color: #E74C3C; animation: iv-pulse 1s infinite; }
+
+@keyframes iv-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.iv-q-counter {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Progress bar in topbar */
+.iv-progress-track {
+  width: 120px;
+  height: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.iv-progress-fill {
+  height: 100%;
+  background: #4A8AFF;
+  border-radius: var(--radius-pill);
+  transition: width 0.4s var(--ease-out-expo);
+}
+
+/* Question Panel (Left) */
+.iv-question-panel {
+  padding: 32px 28px;
+  background: var(--bg-base);
+  border-right: 1px solid var(--border-default);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.iv-q-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.iv-q-type-tag {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.iv-q-type-coding { background: rgba(155, 89, 182, 0.12); color: #9B59B6; }
+.iv-q-type-theoretical { background: rgba(30, 84, 183, 0.10); color: var(--accent); }
+.iv-q-type-behavioral { background: rgba(39, 174, 96, 0.12); color: #27AE60; }
+.iv-q-type-system { background: rgba(243, 156, 18, 0.12); color: #F39C12; }
+
+.iv-q-text {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--text-heading);
+  margin-bottom: 20px;
+  flex: 1;
+}
+.iv-q-text code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--accent);
+}
+.iv-q-context {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  padding: 14px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent);
+  margin-bottom: 16px;
+}
+
+/* Hint Button */
+.iv-hint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  margin-top: auto;
+}
+.iv-hint-btn:hover {
+  border-color: #F39C12;
+  color: #F39C12;
+  background: rgba(243, 156, 18, 0.06);
+}
+.iv-hint-btn svg { width: 14px; height: 14px; }
+.iv-hint-penalty {
+  font-size: 10px;
+  color: #E74C3C;
+  font-weight: 600;
+}
+.iv-hint-box {
+  display: none;
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: rgba(243, 156, 18, 0.06);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.iv-hint-box.visible { display: block; }
+
+/* Answer Panel (Right) */
+.iv-answer-panel {
+  padding: 32px 28px;
+  background: var(--bg-surface);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.iv-answer-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.iv-answer-textarea {
+  flex: 1;
+  min-height: 200px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-input, #fff);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color var(--duration-fast) ease;
+}
+.iv-answer-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+.iv-answer-textarea.code-mode {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 4;
+  white-space: pre;
+  background: var(--graphite-dark);
+  color: #E8EAF0;
+  border-color: rgba(74, 138, 255, 0.2);
+}
+.iv-answer-textarea.code-mode::placeholder {
+  color: rgba(232, 234, 240, 0.3);
+}
+
+.iv-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--graphite-deeper);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  margin-bottom: -1px;
+}
+.iv-code-lang {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4A8AFF;
+  font-family: var(--font-mono);
+}
+.iv-code-dots {
+  display: flex;
+  gap: 5px;
+}
+.iv-code-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.iv-code-dots span:nth-child(1) { background: #E74C3C; }
+.iv-code-dots span:nth-child(2) { background: #F39C12; }
+.iv-code-dots span:nth-child(3) { background: #27AE60; }
+
+.iv-char-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 6px;
+}
+
+.iv-answer-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.iv-submit-btn {
+  flex: 1;
+  padding: 13px 24px;
+  border-radius: var(--radius-md);
+  background: var(--gradient-accent);
+  color: var(--text-on-cobalt);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--cobalt-shadow);
+  transition: all var(--duration-base) ease;
+}
+.iv-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(30, 84, 183, 0.25);
+}
+.iv-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.iv-skip-btn {
+  padding: 13px 20px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+.iv-skip-btn:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+}
+
+/* ── Results Mode ── */
+.iv-results-hero {
+  text-align: center;
+  padding: 40px 20px 32px;
+  margin-bottom: 28px;
+}
+.iv-results-company {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.iv-results-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 24px;
+}
+
+/* Score Ring */
+.iv-score-ring {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 20px;
+}
+.iv-score-ring svg {
+  width: 140px;
+  height: 140px;
+  transform: rotate(-90deg);
+}
+.iv-score-ring-bg {
+  fill: none;
+  stroke: var(--progress-track);
+  stroke-width: 8;
+}
+.iv-score-ring-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 377;
+  stroke-dashoffset: 377;
+  transition: stroke-dashoffset 1.2s var(--ease-out-expo);
+}
+.iv-ring-grade-A .iv-score-ring-fill { stroke: #27AE60; }
+.iv-ring-grade-B .iv-score-ring-fill { stroke: var(--accent); }
+.iv-ring-grade-C .iv-score-ring-fill { stroke: #F39C12; }
+.iv-ring-grade-D .iv-score-ring-fill { stroke: #E74C3C; }
+.iv-score-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.iv-score-pct {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-heading);
+}
+.iv-score-grade {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.iv-score-grade-A { color: #27AE60; }
+.iv-score-grade-B { color: var(--accent); }
+.iv-score-grade-C { color: #F39C12; }
+.iv-score-grade-D { color: #E74C3C; }
+
+/* Breakdown */
+.iv-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.iv-breakdown-item {
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.iv-breakdown-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.iv-breakdown-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Strengths / Improvements */
+.iv-feedback-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+@media (max-width: 700px) { .iv-feedback-cols { grid-template-columns: 1fr; } }
+.iv-feedback-card {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+.iv-feedback-card h3 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+.iv-feedback-card.strengths h3 { color: #27AE60; }
+.iv-feedback-card.improvements h3 { color: #F39C12; }
+.iv-feedback-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.iv-feedback-card li {
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.iv-feedback-card li:last-child { border-bottom: none; }
+.iv-feedback-card li::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.iv-feedback-card.strengths li::before { background: #27AE60; }
+.iv-feedback-card.improvements li::before { background: #F39C12; }
+
+/* Per-question result */
+.iv-result-q {
+  margin-bottom: 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+.iv-result-q-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: background var(--duration-fast) ease;
+}
+.iv-result-q-header:hover { background: var(--bg-hover); }
+.iv-result-q-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 10px;
+}
+.iv-result-q-text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading);
+  line-height: 1.4;
+}
+.iv-result-q-score {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 12px;
+  white-space: nowrap;
+}
+.iv-result-q-score.good { background: rgba(39, 174, 96, 0.12); color: #27AE60; }
+.iv-result-q-score.ok { background: rgba(243, 156, 18, 0.12); color: #F39C12; }
+.iv-result-q-score.poor { background: rgba(231, 76, 60, 0.12); color: #E74C3C; }
+
+.iv-result-q-body {
+  display: none;
+  padding: 0 18px 18px;
+}
+.iv-result-q.open .iv-result-q-body { display: block; }
+.iv-result-q-section {
+  margin-bottom: 14px;
+}
+.iv-result-q-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.iv-result-q-answer {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+.iv-result-q-answer.yours {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+.iv-result-q-answer.ideal {
+  background: rgba(39, 174, 96, 0.06);
+  border: 1px solid rgba(39, 174, 96, 0.2);
+}
+.iv-result-q-feedback {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  padding: 10px 14px;
+  background: var(--cobalt-muted);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent);
+}
+
+/* Tips section */
+.iv-tips-card {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+.iv-tips-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 12px;
+}
+.iv-tips-card ol {
+  padding-left: 20px;
+  margin: 0;
+}
+.iv-tips-card li {
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* STAR method box */
+.iv-star-box {
+  padding: 18px;
+  background: rgba(30, 84, 183, 0.05);
+  border: 1px solid rgba(30, 84, 183, 0.15);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+.iv-star-box h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.iv-star-item {
+  display: flex;
+  gap: 10px;
+  padding: 6px 0;
+}
+.iv-star-letter {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-cobalt);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.iv-star-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.iv-star-desc strong {
+  color: var(--text-heading);
+}
+
+/* Results actions */
+.iv-results-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 32px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.iv-results-actions a {
+  padding: 12px 28px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  text-decoration: none;
+  transition: all var(--duration-fast) ease;
+}
+.iv-results-actions .btn-primary-iv {
+  background: var(--gradient-accent);
+  color: var(--text-on-cobalt);
+  box-shadow: var(--cobalt-shadow);
+}
+.iv-results-actions .btn-primary-iv:hover {
+  transform: translateY(-1px);
+}
+.iv-results-actions .btn-secondary-iv {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+.iv-results-actions .btn-secondary-iv:hover {
+  background: var(--cobalt-muted);
+}
+
+/* ── Empty state ── */
+.iv-empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Coming Soon Overlay ── */
+.iv-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.iv-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+.iv-overlay-card {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 44px 40px 36px;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255,255,255,0.05);
+  transform: scale(0.92) translateY(16px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  opacity: 0;
+}
+.iv-overlay.active .iv-overlay-card {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+.iv-overlay-icon {
+  margin-bottom: 18px;
+}
+.iv-overlay-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+.iv-overlay-msg {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.iv-overlay-ok-btn {
+  display: inline-block;
+  padding: 12px 48px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--gradient-accent, linear-gradient(135deg, #1e54b7, #2563eb));
+  color: var(--text-on-cobalt, #fff);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--cobalt-shadow, 0 4px 14px rgba(37, 99, 235, 0.3));
+  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+}
+.iv-overlay-ok-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(30, 84, 183, 0.35);
+}
+.iv-overlay-ok-btn:active {
+  transform: translateY(0);
+}
+[data-theme="dark"] .iv-overlay-card {
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+/* Chevron toggle icon */
+.iv-result-q-header .iv-chevron {
+  transition: transform var(--duration-fast) ease;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.iv-result-q.open .iv-result-q-header .iv-chevron {
+  transform: rotate(180deg);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+
+{% if mode == "setup" %}
+{# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SETUP MODE — company / round / difficulty / duration
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
+<div class="page-header" style="margin-bottom:24px;">
+  <h1 style="color:var(--text-heading);font-size:24px;font-weight:700;">
+    <span style="color:var(--accent);">Interview</span> Simulator
+  </h1>
+  <p style="color:var(--text-secondary);margin-top:4px;font-size:14px;">
+    Practice real placement interviews. Choose a company, pick a round, and face questions that mirror actual hiring patterns.
+  </p>
+</div>
+
+<form id="iv-setup-form" method="GET" action="/interview-sim/start">
+  <div class="iv-setup-grid">
+    <!-- Left: Configuration -->
+    <div class="iv-config-card">
+      <h3>Select Company</h3>
+      <div class="iv-company-grid" id="iv-company-grid">
+        {% set company_list = companies or ['TCS', 'Infosys', 'Wipro', 'Accenture', 'Amazon', 'Microsoft', 'Generic'] %}
+        {% for c in company_list %}
+        <button type="button" class="iv-company-btn{% if loop.first %} selected{% endif %}" data-company="{{ c }}" onclick="selectCompany(this, '{{ c }}')">
+          {{ c }}
+        </button>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="company" id="iv-company-input" value="{{ company_list[0] }}">
+
+      <div class="iv-field" style="margin-top:18px;">
+        <label>Interview Round</label>
+        <div class="iv-chip-row" id="iv-round-row">
+          <button type="button" class="iv-chip selected" data-round="technical" onclick="selectChip(this, 'iv-round-row', 'round')">Technical</button>
+          <button type="button" class="iv-chip" data-round="hr" onclick="selectChip(this, 'iv-round-row', 'round')">HR</button>
+          <button type="button" class="iv-chip" data-round="behavioral" onclick="selectChip(this, 'iv-round-row', 'round')">Behavioral</button>
+          <button type="button" class="iv-chip" data-round="system_design" onclick="selectChip(this, 'iv-round-row', 'round')">System Design</button>
+        </div>
+        <input type="hidden" name="round" id="iv-round-input" value="technical">
+      </div>
+
+      <div class="iv-field">
+        <label>Difficulty</label>
+        <div class="iv-chip-row" id="iv-diff-row">
+          <button type="button" class="iv-chip" data-difficulty="easy" onclick="selectChip(this, 'iv-diff-row', 'difficulty')">Easy</button>
+          <button type="button" class="iv-chip selected" data-difficulty="medium" onclick="selectChip(this, 'iv-diff-row', 'difficulty')">Medium</button>
+          <button type="button" class="iv-chip" data-difficulty="hard" onclick="selectChip(this, 'iv-diff-row', 'difficulty')">Hard</button>
+        </div>
+        <input type="hidden" name="difficulty" id="iv-difficulty-input" value="medium">
+      </div>
+
+      <div class="iv-field">
+        <label>Duration</label>
+        <div class="iv-chip-row" id="iv-dur-row">
+          <button type="button" class="iv-chip" data-duration="15" onclick="selectChip(this, 'iv-dur-row', 'duration')">15 min</button>
+          <button type="button" class="iv-chip selected" data-duration="30" onclick="selectChip(this, 'iv-dur-row', 'duration')">30 min</button>
+          <button type="button" class="iv-chip" data-duration="45" onclick="selectChip(this, 'iv-dur-row', 'duration')">45 min</button>
+        </div>
+        <input type="hidden" name="duration" id="iv-duration-input" value="30">
+      </div>
+    </div>
+
+    <!-- Right: Preview / Tips -->
+    <div class="iv-config-card" style="display:flex;flex-direction:column;justify-content:space-between;">
+      <div>
+        <h3>What to Expect</h3>
+        <div id="iv-preview-info" style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+          <p style="margin-bottom:10px;">You will face timed questions simulating a real <strong id="iv-preview-company" style="color:var(--accent);">{{ company_list[0] }}</strong> placement interview.</p>
+          <ul style="padding-left:18px;margin:0;">
+            <li>Questions appear one at a time</li>
+            <li>Timer runs throughout the session</li>
+            <li>Hints available with a small score penalty</li>
+            <li>Detailed AI feedback after completion</li>
+          </ul>
+          <div style="margin-top:16px;padding:12px;background:var(--cobalt-muted);border-radius:var(--radius-md);border-left:3px solid var(--accent);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent);margin-bottom:4px;">Pro Tip</div>
+            <div style="font-size:12px;color:var(--text-secondary);">
+              Treat this like the real thing. Sit upright, stay calm, and manage your time.
+              Companies like TCS and Infosys prioritize speed; Amazon and Microsoft value depth.
+            </div>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="iv-start-btn" style="margin-top:20px;" onclick="showInterviewOverlay()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start Interview
+      </button>
+    </div>
+  </div>
+</form>
+
+<!-- ── Interview Coming Soon Overlay ── -->
+<div class="iv-overlay" id="iv-overlay" onclick="hideInterviewOverlay(event)">
+  <div class="iv-overlay-card">
+    <div class="iv-overlay-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <h2 class="iv-overlay-title">Interview Simulator Coming Soon</h2>
+    <p class="iv-overlay-msg">
+      Sorry for the inconvenience. We are yet to enable this interview simulator. Stay tuned for updates.
+    </p>
+    <button class="iv-overlay-ok-btn" onclick="hideInterviewOverlay(event)">OK</button>
+  </div>
+</div>
+
+<!-- Previous Interview History -->
+{% if interview_history %}
+<div class="iv-history-section">
+  <h3>Previous Interviews</h3>
+  <div class="iv-history-grid">
+    {% for h in interview_history %}
+    <div class="iv-history-card">
+      <div class="iv-history-top">
+        <span class="iv-history-company">{{ h.company }}</span>
+        <span class="iv-history-grade iv-grade-{{ h.grade }}">{{ h.grade }}</span>
+      </div>
+      <div class="iv-history-meta">{{ h.round_type | title }} Round &middot; {{ h.date }} &middot; {{ h.score }}%</div>
+      <div class="iv-history-score-bar">
+        <div class="iv-history-score-fill" style="width:{{ h.score }}%;background:{% if h.score >= 80 %}#27AE60{% elif h.score >= 60 %}var(--accent){% elif h.score >= 40 %}#F39C12{% else %}#E74C3C{% endif %};"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+{% elif mode == "active" %}
+{# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ACTIVE MODE — split-screen interview environment
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
+<div class="iv-active-shell">
+  <!-- Top Bar -->
+  <div class="iv-topbar">
+    <div class="iv-topbar-left">
+      <span class="iv-topbar-company">{{ company }}</span>
+      <span class="iv-topbar-round">{{ round_type | replace('_', ' ') | title }}</span>
+    </div>
+    <div class="iv-topbar-right">
+      <div class="iv-progress-track">
+        <div class="iv-progress-fill" id="iv-progress-fill" style="width:0%;"></div>
+      </div>
+      <span class="iv-q-counter" id="iv-q-counter">Q1 of {{ questions | length }}</span>
+      <span class="iv-timer" id="iv-timer">00:00</span>
+    </div>
+  </div>
+
+  <!-- Question Panel (Left) -->
+  <div class="iv-question-panel" id="iv-question-panel">
+    <div class="iv-q-badge">
+      <span>Question <span id="iv-q-num">1</span></span>
+      <span class="iv-q-type-tag" id="iv-q-type-tag"></span>
+    </div>
+    <div class="iv-q-text" id="iv-q-text">
+      Loading question...
+    </div>
+    <div class="iv-q-context" id="iv-q-context" style="display:none;"></div>
+
+    <div style="margin-top:auto;">
+      <button type="button" class="iv-hint-btn" id="iv-hint-btn" onclick="showHint()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+        Show Hint
+        <span class="iv-hint-penalty">(-10% penalty)</span>
+      </button>
+      <div class="iv-hint-box" id="iv-hint-box"></div>
+    </div>
+  </div>
+
+  <!-- Answer Panel (Right) -->
+  <div class="iv-answer-panel" id="iv-answer-panel">
+    <div class="iv-answer-label" id="iv-answer-label">Your Answer</div>
+
+    <!-- Code editor header (shown only for coding questions) -->
+    <div class="iv-code-header" id="iv-code-header" style="display:none;">
+      <div class="iv-code-dots"><span></span><span></span><span></span></div>
+      <span class="iv-code-lang" id="iv-code-lang">Python</span>
+    </div>
+
+    <textarea
+      class="iv-answer-textarea"
+      id="iv-answer-textarea"
+      placeholder="Type your answer here..."
+      spellcheck="false"
+    ></textarea>
+    <div class="iv-char-count"><span id="iv-char-count">0</span> characters</div>
+
+    <div class="iv-answer-actions">
+      <button type="button" class="iv-submit-btn" id="iv-submit-btn" onclick="submitAnswer()">
+        Submit Answer &amp; Next
+      </button>
+      <button type="button" class="iv-skip-btn" id="iv-skip-btn" onclick="skipQuestion()">
+        Skip
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden form for final submission -->
+<form id="iv-final-form" method="POST" action="/interview-sim/submit" style="display:none;">
+  <input type="hidden" name="company" value="{{ company }}">
+  <input type="hidden" name="round_type" value="{{ round_type }}">
+  <input type="hidden" name="question_data" value="{{ question_data_json }}">
+  <input type="hidden" name="answers" id="iv-answers-json" value="{}">
+  <input type="hidden" name="duration_mins" value="{{ duration_mins }}">
+  <input type="hidden" name="time_taken" id="iv-time-taken" value="0">
+  <input type="hidden" name="hints_used" id="iv-hints-used" value="0">
+</form>
+
+
+{% elif mode == "results" %}
+{# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESULTS MODE — score, breakdown, per-question feedback
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
+<div class="iv-results-hero">
+  <div class="iv-results-company">{{ company }} &mdash; {{ round_type | replace('_', ' ') | title }} Round</div>
+  <h1 class="iv-results-title">Interview Complete</h1>
+
+  <div class="iv-score-ring iv-ring-grade-{{ grade }}" id="iv-score-ring">
+    <svg viewBox="0 0 140 140">
+      <circle class="iv-score-ring-bg" cx="70" cy="70" r="60" />
+      <circle class="iv-score-ring-fill" cx="70" cy="70" r="60" />
+    </svg>
+    <div class="iv-score-center">
+      <div class="iv-score-pct">{{ score }}%</div>
+      <div class="iv-score-grade iv-score-grade-{{ grade }}">Grade {{ grade }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Breakdown -->
+{% if feedback and feedback.breakdown %}
+<div class="iv-breakdown-grid">
+  {% for cat, val in feedback.breakdown.items() %}
+  <div class="iv-breakdown-item">
+    <div class="iv-breakdown-label">{{ cat | replace('_', ' ') | title }}</div>
+    <div class="iv-breakdown-val">{{ val }}%</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Strengths & Improvements -->
+{% if feedback %}
+<div class="iv-feedback-cols">
+  <div class="iv-feedback-card strengths">
+    <h3>Strengths</h3>
+    <ul>
+      {% for s in feedback.strengths or [] %}
+      <li>{{ s }}</li>
+      {% endfor %}
+      {% if not feedback.strengths %}
+      <li>Complete more questions to see your strengths</li>
+      {% endif %}
+    </ul>
+  </div>
+  <div class="iv-feedback-card improvements">
+    <h3>Areas for Improvement</h3>
+    <ul>
+      {% for imp in feedback.improvements or [] %}
+      <li>{{ imp }}</li>
+      {% endfor %}
+      {% if not feedback.improvements %}
+      <li>Keep practicing to identify improvement areas</li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<!-- STAR Method Tips (for behavioral rounds) -->
+{% if round_type in ['behavioral', 'hr'] %}
+<div class="iv-star-box">
+  <h4>STAR Method — Structure Behavioral Answers</h4>
+  <div class="iv-star-item">
+    <span class="iv-star-letter">S</span>
+    <span class="iv-star-desc"><strong>Situation</strong> &mdash; Set the scene. Describe the context of the situation you were in.</span>
+  </div>
+  <div class="iv-star-item">
+    <span class="iv-star-letter">T</span>
+    <span class="iv-star-desc"><strong>Task</strong> &mdash; Describe your responsibility or the challenge you faced.</span>
+  </div>
+  <div class="iv-star-item">
+    <span class="iv-star-letter">A</span>
+    <span class="iv-star-desc"><strong>Action</strong> &mdash; Explain exactly what steps you took to address the task.</span>
+  </div>
+  <div class="iv-star-item">
+    <span class="iv-star-letter">R</span>
+    <span class="iv-star-desc"><strong>Result</strong> &mdash; Share the outcome. Quantify with numbers where possible.</span>
+  </div>
+</div>
+{% endif %}
+
+<!-- Company-specific tips -->
+{% if tips %}
+<div class="iv-tips-card">
+  <h3>Tips for {{ company }} Interviews</h3>
+  <ol>
+    {% for tip in tips %}
+    <li>{{ tip }}</li>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
+<!-- Detailed Per-Question Feedback -->
+<div style="margin-bottom:24px;">
+  <h3 style="font-size:14px;font-weight:700;color:var(--text-heading);margin-bottom:14px;">Detailed Question Review</h3>
+
+  {% for r in results %}
+  <div class="iv-result-q" id="iv-rq-{{ loop.index }}">
+    <div class="iv-result-q-header" onclick="toggleResultQ({{ loop.index }})">
+      <span class="iv-result-q-num">Q{{ loop.index }}</span>
+      <span class="iv-result-q-text">{{ r.question }}</span>
+      <span class="iv-result-q-score {% if r.score >= 80 %}good{% elif r.score >= 50 %}ok{% else %}poor{% endif %}">
+        {{ r.score }}%
+      </span>
+      <svg class="iv-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="iv-result-q-body">
+      <div class="iv-result-q-section">
+        <div class="iv-result-q-section-label">Your Answer</div>
+        <div class="iv-result-q-answer yours">{{ r.your_answer or '(No answer submitted)' }}</div>
+      </div>
+      <div class="iv-result-q-section">
+        <div class="iv-result-q-section-label">Ideal Answer</div>
+        <div class="iv-result-q-answer ideal">{{ r.ideal_answer }}</div>
+      </div>
+      {% if r.feedback %}
+      <div class="iv-result-q-section">
+        <div class="iv-result-q-section-label">Feedback</div>
+        <div class="iv-result-q-feedback">{{ r.feedback }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Action Buttons -->
+<div class="iv-results-actions">
+  <a href="javascript:void(0)" class="btn-primary-iv" onclick="showInterviewOverlay()">Retry This Interview</a>
+  <a href="/interview-sim" class="btn-secondary-iv">Try Different Company</a>
+</div>
+
+<!-- ── Interview Coming Soon Overlay (results mode) ── -->
+<div class="iv-overlay" id="iv-overlay" onclick="hideInterviewOverlay(event)">
+  <div class="iv-overlay-card">
+    <div class="iv-overlay-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <h2 class="iv-overlay-title">Interview Simulator Coming Soon</h2>
+    <p class="iv-overlay-msg">
+      Sorry for the inconvenience. We are yet to enable this interview simulator. Stay tuned for updates.
+    </p>
+    <button class="iv-overlay-ok-btn" onclick="hideInterviewOverlay(event)">OK</button>
+  </div>
+</div>
+
+{% endif %}
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{% if mode == "setup" %}
+<script>
+/* ── Setup Mode Scripts ── */
+function selectCompany(btn, company) {
+  document.querySelectorAll('#iv-company-grid .iv-company-btn').forEach(function(b) { b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  document.getElementById('iv-company-input').value = company;
+  document.getElementById('iv-preview-company').textContent = company;
+}
+
+function selectChip(btn, rowId, field) {
+  var row = document.getElementById(rowId);
+  row.querySelectorAll('.iv-chip').forEach(function(c) { c.classList.remove('selected'); });
+  btn.classList.add('selected');
+  var val = btn.dataset[field];
+  document.getElementById('iv-' + field + '-input').value = val;
+}
+
+/* ── Interview Coming Soon Overlay ── */
+function showInterviewOverlay() {
+  var overlay = document.getElementById('iv-overlay');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  /* Force reflow so transition fires */
+  overlay.offsetHeight;
+  overlay.classList.add('active');
+}
+
+function hideInterviewOverlay(e) {
+  /* If clicked inside card, only close if it's the OK button */
+  if (e && e.target.closest('.iv-overlay-card') && !e.target.classList.contains('iv-overlay-ok-btn')) return;
+  var overlay = document.getElementById('iv-overlay');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(function() { overlay.style.display = 'none'; }, 300);
+}
+
+/* Close on Escape key */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('iv-overlay').classList.contains('active')) {
+    hideInterviewOverlay(e);
+  }
+});
+</script>
+
+
+{% elif mode == "active" %}
+<script>
+/* ── Active Interview Scripts ── */
+(function() {
+  var questions = {{ question_data_json | safe }};
+  var totalQ = questions.length;
+  var currentIdx = 0;
+  var answers = {};
+  var hintsUsed = 0;
+  var hintUsedForCurrent = false;
+  var durationMins = {{ duration_mins | default(30) }};
+  var startTime = Date.now();
+  var maxTime = durationMins * 60 * 1000;
+  var timerEl = document.getElementById('iv-timer');
+  var intervalId = null;
+
+  /* Timer */
+  function updateTimer() {
+    var elapsed = Date.now() - startTime;
+    var remaining = Math.max(0, maxTime - elapsed);
+    var totalSec = Math.floor(remaining / 1000);
+    var mins = Math.floor(totalSec / 60);
+    var secs = totalSec % 60;
+    timerEl.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+    /* Warning / critical states */
+    timerEl.classList.remove('warning', 'critical');
+    if (remaining <= 60000) {
+      timerEl.classList.add('critical');
+    } else if (remaining <= 180000) {
+      timerEl.classList.add('warning');
+    }
+
+    if (remaining <= 0) {
+      clearInterval(intervalId);
+      finishInterview();
+    }
+  }
+  intervalId = setInterval(updateTimer, 1000);
+  updateTimer();
+
+  /* Load question */
+  function loadQuestion(idx) {
+    if (idx >= totalQ) { finishInterview(); return; }
+    currentIdx = idx;
+    hintUsedForCurrent = false;
+
+    var q = questions[idx];
+    document.getElementById('iv-q-num').textContent = idx + 1;
+    document.getElementById('iv-q-counter').textContent = 'Q' + (idx + 1) + ' of ' + totalQ;
+
+    /* Progress */
+    var pct = ((idx) / totalQ) * 100;
+    document.getElementById('iv-progress-fill').style.width = pct + '%';
+
+    /* Question text */
+    document.getElementById('iv-q-text').innerHTML = q.question || '';
+
+    /* Question type tag */
+    var typeTag = document.getElementById('iv-q-type-tag');
+    var qType = (q.type || 'theoretical').toLowerCase();
+    typeTag.textContent = qType.charAt(0).toUpperCase() + qType.slice(1);
+    typeTag.className = 'iv-q-type-tag';
+    if (qType === 'coding') typeTag.classList.add('iv-q-type-coding');
+    else if (qType === 'behavioral') typeTag.classList.add('iv-q-type-behavioral');
+    else if (qType === 'system' || qType === 'system_design') typeTag.classList.add('iv-q-type-system');
+    else typeTag.classList.add('iv-q-type-theoretical');
+
+    /* Context */
+    var ctxEl = document.getElementById('iv-q-context');
+    if (q.context) {
+      ctxEl.textContent = q.context;
+      ctxEl.style.display = 'block';
+    } else {
+      ctxEl.style.display = 'none';
+    }
+
+    /* Code mode */
+    var textarea = document.getElementById('iv-answer-textarea');
+    var codeHeader = document.getElementById('iv-code-header');
+    if (qType === 'coding') {
+      textarea.classList.add('code-mode');
+      textarea.placeholder = '# Write your code here...\n\ndef solution():\n    pass';
+      codeHeader.style.display = 'flex';
+      document.getElementById('iv-code-lang').textContent = q.language || 'Python';
+      document.getElementById('iv-answer-label').textContent = 'Your Code';
+    } else {
+      textarea.classList.remove('code-mode');
+      textarea.placeholder = 'Type your answer here...';
+      codeHeader.style.display = 'none';
+      document.getElementById('iv-answer-label').textContent = 'Your Answer';
+    }
+
+    /* Restore previous answer if navigating back */
+    textarea.value = answers[idx] || '';
+    document.getElementById('iv-char-count').textContent = textarea.value.length;
+
+    /* Reset hint */
+    document.getElementById('iv-hint-box').classList.remove('visible');
+    document.getElementById('iv-hint-box').textContent = '';
+    document.getElementById('iv-hint-btn').style.display = q.hint ? 'inline-flex' : 'none';
+
+    textarea.focus();
+  }
+
+  /* Character counter */
+  document.getElementById('iv-answer-textarea').addEventListener('input', function() {
+    document.getElementById('iv-char-count').textContent = this.value.length;
+  });
+
+  /* Tab key in code mode inserts spaces */
+  document.getElementById('iv-answer-textarea').addEventListener('keydown', function(e) {
+    if (e.key === 'Tab' && this.classList.contains('code-mode')) {
+      e.preventDefault();
+      var start = this.selectionStart;
+      var end = this.selectionEnd;
+      this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+      this.selectionStart = this.selectionEnd = start + 4;
+    }
+  });
+
+  /* Submit answer */
+  window.submitAnswer = function() {
+    var textarea = document.getElementById('iv-answer-textarea');
+    var answer = textarea.value.trim();
+    if (!answer) {
+      textarea.style.borderColor = '#E74C3C';
+      setTimeout(function() { textarea.style.borderColor = ''; }, 1500);
+      return;
+    }
+    answers[currentIdx] = answer;
+    loadQuestion(currentIdx + 1);
+  };
+
+  /* Skip question */
+  window.skipQuestion = function() {
+    answers[currentIdx] = answers[currentIdx] || '';
+    loadQuestion(currentIdx + 1);
+  };
+
+  /* Show hint */
+  window.showHint = function() {
+    if (hintUsedForCurrent) return;
+    hintUsedForCurrent = true;
+    hintsUsed++;
+    var q = questions[currentIdx];
+    var hintBox = document.getElementById('iv-hint-box');
+    hintBox.textContent = q.hint || 'Think about the core concept and break the problem into smaller steps.';
+    hintBox.classList.add('visible');
+    document.getElementById('iv-hints-used').value = hintsUsed;
+  };
+
+  /* Finish interview */
+  function finishInterview() {
+    clearInterval(intervalId);
+
+    /* Save current answer if any */
+    var textarea = document.getElementById('iv-answer-textarea');
+    if (textarea.value.trim()) {
+      answers[currentIdx] = textarea.value.trim();
+    }
+
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    document.getElementById('iv-answers-json').value = JSON.stringify(answers);
+    document.getElementById('iv-time-taken').value = elapsed;
+    document.getElementById('iv-hints-used').value = hintsUsed;
+
+    /* Complete the progress bar */
+    document.getElementById('iv-progress-fill').style.width = '100%';
+
+    document.getElementById('iv-final-form').submit();
+  }
+
+  /* Initialize */
+  loadQuestion(0);
+})();
+</script>
+
+
+{% elif mode == "results" %}
+<script>
+/* ── Results Mode Scripts ── */
+(function() {
+  /* Animate score ring */
+  var score = {{ score | default(0) }};
+  var circumference = 2 * Math.PI * 60; /* r=60 */
+  var offset = circumference - (score / 100) * circumference;
+  var fillEl = document.querySelector('.iv-score-ring-fill');
+  if (fillEl) {
+    setTimeout(function() {
+      fillEl.style.strokeDashoffset = offset;
+    }, 100);
+  }
+})();
+
+/* Toggle per-question result */
+function toggleResultQ(idx) {
+  var el = document.getElementById('iv-rq-' + idx);
+  if (el) el.classList.toggle('open');
+}
+
+/* ── Interview Coming Soon Overlay ── */
+function showInterviewOverlay() {
+  var overlay = document.getElementById('iv-overlay');
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  overlay.offsetHeight;
+  overlay.classList.add('active');
+}
+function hideInterviewOverlay(e) {
+  if (e && e.target.closest('.iv-overlay-card') && !e.target.classList.contains('iv-overlay-ok-btn')) return;
+  var overlay = document.getElementById('iv-overlay');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(function() { overlay.style.display = 'none'; }, 300);
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('iv-overlay').classList.contains('active')) {
+    hideInterviewOverlay(e);
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

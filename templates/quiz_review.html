@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+{% block title %}Quiz Review — Epoch.ai{% endblock %}
+{% block content %}
+<style>
+/* ── Layout ── */
+.qr-container { max-width: 1200px; margin: 0 auto; padding: 0 24px 48px; }
+
+.qr-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: 16px; margin-bottom: 28px;
+}
+.qr-header-stats { display: flex; gap: 24px; }
+.qr-stat { display: flex; flex-direction: column; align-items: center; }
+.qr-stat-num { font-size: 28px; font-weight: 700; line-height: 1.1; }
+.qr-stat-lbl { font-size: 12px; color: var(--text-muted, #888); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+
+/* ── Category filter bar ── */
+.qr-filter-bar {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 32px; padding: 12px 16px;
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px;
+}
+.qr-filter-label {
+    font-size: 13px; font-weight: 600; color: var(--text-muted, #888);
+    text-transform: uppercase; letter-spacing: .05em; margin-right: 8px;
+}
+.qr-filter-btn {
+    padding: 6px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .2s;
+}
+.qr-filter-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.qr-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── Category section ── */
+.qr-category-section { margin-bottom: 40px; }
+.qr-category-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+}
+.qr-category-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0;
+}
+.qr-category-name { font-size: 20px; font-weight: 700; color: var(--text); }
+.qr-category-count { font-size: 13px; color: var(--text-muted, #888); margin-left: auto; }
+
+/* ── Topic card ── */
+.qr-topics-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 20px;
+}
+.qr-topic-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px; transition: box-shadow .2s, border-color .2s;
+}
+.qr-topic-card:hover { border-color: var(--accent); box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+
+.qr-topic-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px;
+}
+.qr-topic-name { font-size: 16px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
+.qr-topic-meta { font-size: 12px; color: var(--text-muted, #888); }
+.qr-topic-meta span + span::before { content: " \00b7 "; margin: 0 4px; }
+
+/* ── Mastery ring ── */
+.qr-mastery-ring { position: relative; width: 52px; height: 52px; flex-shrink: 0; }
+.qr-mastery-ring svg { width: 52px; height: 52px; }
+.qr-ring-text {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 700; color: var(--text);
+}
+
+/* ── Chapter progress row ── */
+.qr-chapter-progress { margin-bottom: 16px; }
+.qr-chapter-progress-label {
+    font-size: 11px; font-weight: 600; color: var(--text-muted, #888);
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px;
+}
+.qr-chapters-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.qr-chapter-dot {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); min-width: 56px; text-decoration: none;
+    transition: all .2s; cursor: pointer;
+}
+.qr-chapter-dot:hover { border-color: var(--accent); transform: translateY(-1px); }
+.qr-chapter-dot-num { font-size: 10px; font-weight: 600; color: var(--text-muted, #888); text-transform: uppercase; }
+.qr-chapter-dot-score { font-size: 13px; font-weight: 700; }
+.qr-chapter-dot-date { font-size: 9px; color: var(--text-muted, #888); }
+
+/* Chapter dot states */
+.qr-chapter-dot.ch-pass { border-color: #22c55e; background: rgba(34,197,94,.08); }
+.qr-chapter-dot.ch-pass .qr-chapter-dot-score { color: #22c55e; }
+.qr-chapter-dot.ch-fail { border-color: #ef4444; background: rgba(239,68,68,.08); }
+.qr-chapter-dot.ch-fail .qr-chapter-dot-score { color: #ef4444; }
+.qr-chapter-dot.ch-none { opacity: .5; }
+.qr-chapter-dot.ch-none .qr-chapter-dot-score { color: var(--text-muted, #888); }
+
+/* ── Main assessment row ── */
+.qr-main-assessment {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: 10px;
+    background: var(--bg); border: 1px solid var(--border);
+    margin-bottom: 14px;
+}
+.qr-main-assessment-label { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+.qr-main-assessment-score { font-size: 14px; font-weight: 700; }
+.qr-main-assessment-date { font-size: 11px; color: var(--text-muted, #888); }
+
+/* ── Score chips ── */
+.qr-scores-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.qr-score-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+}
+.chip-green { background: rgba(34,197,94,.12); color: #22c55e; }
+.chip-orange { background: rgba(245,158,11,.12); color: #f59e0b; }
+.chip-red { background: rgba(239,68,68,.12); color: #ef4444; }
+.chip-blue { background: rgba(59,130,246,.12); color: #3b82f6; }
+
+/* ── Expandable attempt history ── */
+.qr-history-toggle {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; color: var(--accent);
+    font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 0;
+    margin-bottom: 8px;
+}
+.qr-history-toggle svg { transition: transform .2s; }
+.qr-history-toggle.open svg { transform: rotate(180deg); }
+
+.qr-attempts { display: none; margin-bottom: 12px; }
+.qr-attempts.open { display: block; }
+.qr-attempts-label {
+    font-size: 11px; font-weight: 600; color: var(--text-muted, #888);
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px;
+}
+.qr-attempt-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+.qr-attempt-date { color: var(--text-muted, #888); min-width: 80px; }
+.qr-attempt-result { font-weight: 600; color: var(--text); }
+
+/* ── Detail toggle & panel ── */
+.qr-detail-toggle {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    width: 26px; height: 26px; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; color: var(--text-muted, #888);
+    transition: all .2s; margin-left: auto;
+}
+.qr-detail-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.qr-detail-toggle.qr-detail-open { transform: rotate(180deg); }
+
+.qr-detail-panel {
+    padding: 10px 0 6px;
+    border-bottom: 1px solid var(--border);
+}
+.qr-question-item {
+    padding: 10px 12px; border-radius: 8px; margin-bottom: 6px;
+    border-left: 3px solid transparent;
+}
+.qr-q-correct { background: rgba(34,197,94,.05); border-left-color: #22c55e; }
+.qr-q-wrong { background: rgba(239,68,68,.05); border-left-color: #ef4444; }
+.qr-q-header { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+.qr-q-icon { flex-shrink: 0; margin-top: 2px; }
+.qr-q-text { font-size: 13px; font-weight: 500; color: var(--text); }
+.qr-q-answers { padding-left: 22px; }
+.qr-q-ans { font-size: 12px; margin-bottom: 2px; }
+.qr-q-ans-label { color: var(--text-muted, #888); margin-right: 4px; }
+.text-green { color: #22c55e; }
+.text-red { color: #ef4444; }
+.qr-q-explanation {
+    display: flex; align-items: flex-start; gap: 6px;
+    font-size: 12px; color: var(--text-muted, #888);
+    margin-top: 6px; padding: 6px 8px;
+    background: var(--bg); border-radius: 6px;
+}
+
+/* ── Card actions ── */
+.qr-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.qr-card-actions .btn-primary,
+.qr-card-actions .btn-secondary { font-size: 12px; padding: 6px 14px; }
+
+/* ── Empty state ── */
+.qr-empty {
+    text-align: center; padding: 80px 20px;
+    color: var(--text-muted, #888);
+}
+.qr-empty h3 { color: var(--text); margin: 16px 0 8px; }
+
+/* ── Badge helpers ── */
+.badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+}
+.badge-green { background: rgba(34,197,94,.15); color: #22c55e; }
+.badge-orange { background: rgba(245,158,11,.15); color: #f59e0b; }
+.badge-red { background: rgba(239,68,68,.15); color: #ef4444; }
+.badge-gray { background: rgba(128,128,128,.15); color: #888; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    .qr-topics-grid { grid-template-columns: 1fr; }
+    .qr-header { flex-direction: column; }
+    .qr-filter-bar { flex-direction: column; align-items: flex-start; }
+    .qr-chapters-row { gap: 4px; }
+    .qr-chapter-dot { min-width: 48px; padding: 4px 6px; }
+}
+</style>
+
+<div class="qr-container">
+    <!-- ── Header ── -->
+    <div class="qr-header reveal">
+        <div>
+            <h1 class="page-header">Quiz Review</h1>
+            <p class="text-secondary">Review your past quiz performance and retake quizzes to improve.</p>
+        </div>
+        <div class="qr-header-stats">
+            <div class="qr-stat">
+                <span class="qr-stat-num" style="color:var(--accent);">{{ total_quizzes }}</span>
+                <span class="qr-stat-lbl">Total Attempts</span>
+            </div>
+            <div class="qr-stat">
+                <span class="qr-stat-num" style="color:var(--accent);">{{ reviews|length }}</span>
+                <span class="qr-stat-lbl">Topics Attempted</span>
+            </div>
+        </div>
+    </div>
+
+    {% if reviews %}
+
+    <!-- ── Category Filter Bar ── -->
+    <div class="qr-filter-bar reveal">
+        <span class="qr-filter-label">Category</span>
+        <button class="qr-filter-btn active" data-category="all" onclick="filterCategory('all', this)">All</button>
+        {% set seen_groups = [] %}
+        {% for review in reviews %}
+            {% if review.group not in seen_groups %}
+                {% if seen_groups.append(review.group) %}{% endif %}
+                <button class="qr-filter-btn" data-category="{{ review.group }}" onclick="filterCategory('{{ review.group }}', this)">{{ review.group }}</button>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- ── Grouped Content ── -->
+    {% set grouped = {} %}
+    {% for review in reviews %}
+        {% if review.group not in grouped %}
+            {% if grouped.update({review.group: []}) %}{% endif %}
+        {% endif %}
+        {% if grouped[review.group].append(review) %}{% endif %}
+    {% endfor %}
+
+    {% for group_name, group_reviews in grouped.items() %}
+    <div class="qr-category-section reveal" data-category="{{ group_name }}">
+        <!-- Category header -->
+        <div class="qr-category-header">
+            <div class="qr-category-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+            </div>
+            <span class="qr-category-name">{{ group_name }}</span>
+            <span class="qr-category-count">{{ group_reviews|length }} topic{{ 's' if group_reviews|length != 1 }}</span>
+        </div>
+
+        <!-- Topic cards grid -->
+        <div class="qr-topics-grid">
+            {% for review in group_reviews %}
+            <div class="qr-topic-card">
+                <!-- Topic header with mastery ring -->
+                <div class="qr-topic-top">
+                    <div>
+                        <h3 class="qr-topic-name">{{ review.topic_name }}</h3>
+                        <div class="qr-topic-meta">
+                            <span>{{ review.total_attempts }} attempt{{ 's' if review.total_attempts != 1 }}</span>
+                            <span>Mastery: {{ review.mastery }}%</span>
+                        </div>
+                    </div>
+                    <div class="qr-mastery-ring">
+                        <svg viewBox="0 0 44 44">
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--border)" stroke-width="3.5"/>
+                            <circle cx="22" cy="22" r="18" fill="none"
+                                stroke="{% if review.mastery >= 80 %}#22c55e{% elif review.mastery >= 50 %}#f59e0b{% else %}#ef4444{% endif %}"
+                                stroke-width="3.5" stroke-linecap="round"
+                                stroke-dasharray="{{ (review.mastery * 1.131)|round(1) }} 113.1"
+                                transform="rotate(-90 22 22)"/>
+                        </svg>
+                        <span class="qr-ring-text">{{ review.mastery }}%</span>
+                    </div>
+                </div>
+
+                <!-- Chapter-by-chapter progress (Chapters 1-5) -->
+                <div class="qr-chapter-progress">
+                    <div class="qr-chapter-progress-label">Chapter Progress</div>
+                    <div class="qr-chapters-row">
+                        {% for ch_num in range(1, 6) %}
+                            {% set ch_attempt = namespace(found=false, score=0, date='', passed=false) %}
+                            {% for attempt in review.attempts %}
+                                {% if attempt.total == 5 and loop.index == ch_num and not ch_attempt.found %}
+                                    {% set ch_attempt.found = true %}
+                                    {% set ch_attempt.score = attempt.score %}
+                                    {% set ch_attempt.date = attempt.date[:10] if attempt.date else '' %}
+                                    {% set ch_attempt.passed = attempt.score >= 60 %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if ch_attempt.found %}
+                                <a href="/quiz/start?topic={{ review.topic_id }}&count=5&chapter={{ ch_num }}"
+                                   class="qr-chapter-dot {% if ch_attempt.passed %}ch-pass{% else %}ch-fail{% endif %}"
+                                   title="Chapter {{ ch_num }}: {{ ch_attempt.score }}%{% if ch_attempt.passed %} (Passed){% else %} (Failed) — Click to retake{% endif %}">
+                                    <span class="qr-chapter-dot-num">Ch {{ ch_num }}</span>
+                                    <span class="qr-chapter-dot-score">{{ ch_attempt.score }}%</span>
+                                    <span class="qr-chapter-dot-date">{{ ch_attempt.date }}</span>
+                                </a>
+                            {% else %}
+                                <a href="/quiz/start?topic={{ review.topic_id }}&count=5&chapter={{ ch_num }}"
+                                   class="qr-chapter-dot ch-none"
+                                   title="Chapter {{ ch_num }}: Not attempted — Click to start">
+                                    <span class="qr-chapter-dot-num">Ch {{ ch_num }}</span>
+                                    <span class="qr-chapter-dot-score">--</span>
+                                    <span class="qr-chapter-dot-date">N/A</span>
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <!-- Legend -->
+                    <div style="display:flex; gap:12px; margin-top:8px; font-size:10px; color:var(--text-muted, #888);">
+                        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:3px;vertical-align:middle;"></span>Passed</span>
+                        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:3px;vertical-align:middle;"></span>Failed</span>
+                        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;opacity:.5;margin-right:3px;vertical-align:middle;"></span>Not attempted</span>
+                    </div>
+                </div>
+
+                <!-- Main Assessment result -->
+                <div class="qr-main-assessment">
+                    <span class="qr-main-assessment-label">Main Assessment</span>
+                    {% if review.best_score is not none %}
+                        <span class="qr-main-assessment-score {% if review.best_score >= 80 %}text-green{% elif review.best_score >= 50 %}text-orange{% else %}text-red{% endif %}">
+                            {{ review.best_score }}%
+                        </span>
+                        <span class="badge {% if review.best_score >= 80 %}badge-green{% elif review.best_score >= 50 %}badge-orange{% else %}badge-red{% endif %}">
+                            {% if review.best_score >= 80 %}PASS{% else %}FAIL{% endif %}
+                        </span>
+                    {% else %}
+                        <span class="badge badge-gray">Not taken</span>
+                    {% endif %}
+                </div>
+
+                <!-- Score chips -->
+                <div class="qr-scores-row">
+                    <div class="qr-score-chip {% if review.best_score >= 80 %}chip-green{% elif review.best_score >= 50 %}chip-orange{% else %}chip-red{% endif %}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                        Best: {{ review.best_score }}%
+                    </div>
+                    <div class="qr-score-chip chip-blue">
+                        Latest: {{ review.latest_score }}%
+                    </div>
+                </div>
+
+                <!-- Expandable attempt history -->
+                <button class="qr-history-toggle" onclick="toggleHistory(this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    <span>Attempt History ({{ review.total_attempts }})</span>
+                </button>
+                <div class="qr-attempts">
+                    <div class="qr-attempts-label">All Attempts</div>
+                    {% for attempt in review.attempts %}
+                    <div class="qr-attempt-row">
+                        <span class="qr-attempt-date">{{ attempt.date[:10] if attempt.date else '---' }}</span>
+                        <span class="qr-attempt-result">{{ attempt.correct }}/{{ attempt.total }}</span>
+                        <span class="badge {% if attempt.score >= 80 %}badge-green{% elif attempt.score >= 50 %}badge-orange{% else %}badge-red{% endif %}">
+                            {{ attempt.score }}%
+                        </span>
+                        <span class="badge {% if attempt.score >= 60 %}badge-green{% else %}badge-red{% endif %}" style="font-size:10px;">
+                            {% if attempt.score >= 60 %}PASS{% else %}FAIL{% endif %}
+                        </span>
+                        {% if attempt.results %}
+                        <button class="qr-detail-toggle" onclick="toggleDetail(this)" title="View questions">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% if attempt.results %}
+                    <div class="qr-detail-panel" style="display:none;">
+                        {% for r in attempt.results %}
+                        <div class="qr-question-item {% if r.is_correct %}qr-q-correct{% else %}qr-q-wrong{% endif %}">
+                            <div class="qr-q-header">
+                                <span class="qr-q-icon">
+                                    {% if r.is_correct %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    {% else %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    {% endif %}
+                                </span>
+                                <span class="qr-q-text">{{ r.question }}</span>
+                            </div>
+                            <div class="qr-q-answers">
+                                <div class="qr-q-ans">
+                                    <span class="qr-q-ans-label">Your answer:</span>
+                                    <span class="{% if r.is_correct %}text-green{% else %}text-red{% endif %}">{{ r.your_answer }}</span>
+                                </div>
+                                {% if not r.is_correct %}
+                                <div class="qr-q-ans">
+                                    <span class="qr-q-ans-label">Correct answer:</span>
+                                    <span class="text-green">{{ r.correct_answer }}</span>
+                                </div>
+                                {% endif %}
+                                {% if r.explanation %}
+                                <div class="qr-q-explanation">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    {{ r.explanation }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Card actions -->
+                <div class="qr-card-actions">
+                    <a href="/quiz/start?topic={{ review.topic_id }}&count=5" class="btn-primary btn-sm">
+                        Retake Quiz
+                    </a>
+                    <a href="/learning/study?topic={{ review.topic_id }}" class="btn-secondary btn-sm">
+                        Study Topic
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <!-- ── Empty state ── -->
+    <div class="qr-empty reveal">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.3">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <h3>No quizzes taken yet</h3>
+        <p class="text-secondary">Take your first quiz to start tracking your progress.</p>
+        <a href="/quiz" class="btn-primary btn-lg" style="margin-top:16px;">Take a Quiz</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+/* ── Category filter ── */
+function filterCategory(category, btn) {
+    // Update active button
+    document.querySelectorAll('.qr-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+
+    // Show/hide category sections
+    document.querySelectorAll('.qr-category-section').forEach(function(section) {
+        if (category === 'all' || section.getAttribute('data-category') === category) {
+            section.style.display = '';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+
+/* ── Toggle attempt history ── */
+function toggleHistory(btn) {
+    var panel = btn.nextElementSibling;
+    if (!panel || !panel.classList.contains('qr-attempts')) return;
+    var isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open', !isOpen);
+    btn.classList.toggle('open', !isOpen);
+}
+
+/* ── Toggle question detail (preserved from original) ── */
+function toggleDetail(btn) {
+    var panel = btn.closest('.qr-attempt-row').nextElementSibling;
+    if (!panel || !panel.classList.contains('qr-detail-panel')) return;
+    var open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    btn.classList.toggle('qr-detail-open', !open);
+}
+</script>
+{% endblock %}

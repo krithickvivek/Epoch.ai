@@ -1,0 +1,1141 @@
+{% extends "base.html" %}
+{% block title %}Mock Tests — Epoch{% endblock %}
+{% block head %}
+<style>
+/* ── Mock Tests Shared ── */
+.mt-container { max-width: 1100px; margin: 0 auto; }
+.mt-page-title { font-size: 24px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px; }
+.mt-page-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; }
+
+/* ── SELECT MODE ── */
+.mt-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--accent); margin-bottom: 12px; margin-top: 28px;
+    display: flex; align-items: center; gap: 8px;
+}
+.mt-section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border-subtle);
+}
+.mt-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+.mt-card {
+    background: var(--bg-card); border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg); padding: 20px; transition: box-shadow var(--duration-base) var(--ease-out-expo), border-color var(--duration-base);
+    display: flex; flex-direction: column;
+}
+.mt-card:hover {
+    box-shadow: var(--card-hover-shadow); border-color: var(--accent);
+}
+.mt-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.mt-card-name { font-size: 15px; font-weight: 600; color: var(--text-heading); }
+.mt-card-difficulty {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 3px 8px; border-radius: var(--radius-pill);
+}
+.mt-diff-easy { background: rgba(16,185,129,0.12); color: #059669; }
+.mt-diff-medium { background: rgba(245,158,11,0.12); color: #d97706; }
+.mt-diff-hard { background: rgba(239,68,68,0.12); color: #dc2626; }
+.mt-diff-mixed { background: var(--cobalt-muted); color: var(--accent); }
+[data-theme="dark"] .mt-diff-easy { color: #34d399; }
+[data-theme="dark"] .mt-diff-medium { color: #fbbf24; }
+[data-theme="dark"] .mt-diff-hard { color: #f87171; }
+
+.mt-card-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+.mt-card-meta svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; opacity: 0.6; }
+.mt-card-sections { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+.mt-card-sections strong { color: var(--text-secondary); font-weight: 600; }
+.mt-card-prev {
+    font-size: 11px; padding: 6px 10px; border-radius: var(--radius-md);
+    background: var(--bg-surface); border: 1px solid var(--border-subtle);
+    margin-bottom: 12px; color: var(--text-secondary);
+}
+.mt-card-prev .prev-score { font-weight: 700; color: var(--accent); }
+.mt-card-footer { margin-top: auto; }
+.mt-start-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; border-radius: var(--radius-md);
+    background: var(--accent); color: var(--text-on-cobalt);
+    font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+    transition: background var(--duration-fast), box-shadow var(--duration-fast);
+    text-decoration: none;
+}
+.mt-start-btn:hover { background: var(--accent-hover); box-shadow: var(--cobalt-shadow); }
+.mt-company-logo {
+    width: 32px; height: 32px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+
+/* ── ACTIVE MODE (Exam Interface) ── */
+.exam-shell { display: flex; flex-direction: column; height: calc(100vh - 64px); overflow: hidden; }
+.exam-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; background: var(--bg-card); border-bottom: 1px solid var(--border-default);
+    flex-shrink: 0; gap: 12px;
+}
+.exam-title { font-size: 15px; font-weight: 700; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exam-timer {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: var(--radius-pill);
+    background: var(--cobalt-muted); border: 1.5px solid var(--accent);
+    font-size: 18px; font-weight: 700; font-family: var(--font-mono); color: var(--accent);
+    letter-spacing: 0.04em;
+}
+.exam-timer.warning { background: rgba(245,158,11,0.12); border-color: #d97706; color: #d97706; }
+.exam-timer.danger { background: rgba(239,68,68,0.12); border-color: #dc2626; color: #dc2626; animation: timerPulse 1s infinite; }
+@keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+.exam-timer svg { width: 18px; height: 18px; }
+
+.exam-body { display: flex; flex: 1; overflow: hidden; }
+
+/* Section Tabs */
+.exam-section-tabs {
+    display: flex; gap: 0; background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-default); flex-shrink: 0;
+    overflow-x: auto;
+}
+.exam-section-tab {
+    padding: 10px 20px; font-size: 13px; font-weight: 600;
+    color: var(--text-secondary); border: none; background: none;
+    cursor: pointer; position: relative; white-space: nowrap;
+    transition: color var(--duration-fast);
+}
+.exam-section-tab:hover { color: var(--text-primary); }
+.exam-section-tab.active { color: var(--accent); }
+.exam-section-tab.active::after {
+    content: ''; position: absolute; bottom: 0; left: 12px; right: 12px;
+    height: 2.5px; background: var(--accent); border-radius: 2px 2px 0 0;
+}
+
+/* Question Area */
+.exam-question-area {
+    flex: 1; overflow-y: auto; padding: 28px 32px;
+    display: flex; flex-direction: column;
+}
+.exam-q-number { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 8px; }
+.exam-q-text { font-size: 16px; font-weight: 500; color: var(--text-heading); line-height: 1.65; margin-bottom: 24px; }
+.exam-options { display: flex; flex-direction: column; gap: 10px; }
+.exam-option {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px; border-radius: var(--radius-md);
+    border: 1.5px solid var(--border-default); cursor: pointer;
+    transition: border-color var(--duration-fast), background var(--duration-fast);
+    background: var(--bg-card);
+}
+.exam-option:hover { border-color: var(--accent); background: var(--cobalt-muted); }
+.exam-option.selected { border-color: var(--accent); background: var(--cobalt-muted); }
+.exam-option-letter {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+    background: var(--bg-surface); border: 1.5px solid var(--border-default); color: var(--text-secondary);
+    transition: all var(--duration-fast);
+}
+.exam-option.selected .exam-option-letter {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.exam-option-text { font-size: 14px; color: var(--text-primary); line-height: 1.5; padding-top: 3px; }
+
+.exam-q-actions {
+    display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap;
+}
+.exam-btn-review {
+    padding: 8px 16px; border-radius: var(--radius-md); font-size: 12px; font-weight: 600;
+    border: 1.5px solid #d97706; color: #d97706; background: rgba(245,158,11,0.08);
+    cursor: pointer; transition: background var(--duration-fast);
+}
+.exam-btn-review:hover { background: rgba(245,158,11,0.15); }
+.exam-btn-review.flagged { background: rgba(245,158,11,0.2); border-style: solid; }
+.exam-btn-clear {
+    padding: 8px 16px; border-radius: var(--radius-md); font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border-default); color: var(--text-secondary); background: transparent;
+    cursor: pointer;
+}
+.exam-btn-clear:hover { border-color: var(--text-muted); }
+.exam-nav-btns { display: flex; gap: 8px; margin-left: auto; }
+.exam-btn-nav {
+    padding: 8px 18px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
+    border: 1px solid var(--border-default); color: var(--text-primary); background: var(--bg-card);
+    cursor: pointer; transition: border-color var(--duration-fast);
+}
+.exam-btn-nav:hover { border-color: var(--accent); color: var(--accent); }
+.exam-btn-submit {
+    padding: 8px 22px; border-radius: var(--radius-md); font-size: 13px; font-weight: 700;
+    border: none; background: var(--accent); color: #fff; cursor: pointer;
+    transition: background var(--duration-fast), box-shadow var(--duration-fast);
+}
+.exam-btn-submit:hover { background: var(--accent-hover); box-shadow: var(--cobalt-shadow); }
+
+/* Navigation Panel (right sidebar) */
+.exam-nav-panel {
+    width: 240px; flex-shrink: 0; background: var(--bg-card);
+    border-left: 1px solid var(--border-default); padding: 16px;
+    display: flex; flex-direction: column; overflow-y: auto;
+}
+.exam-nav-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px; }
+.exam-nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px; }
+.exam-nav-btn {
+    width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-default);
+    background: var(--bg-surface); color: var(--text-secondary); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: all var(--duration-fast);
+}
+.exam-nav-btn:hover { border-color: var(--accent); }
+.exam-nav-btn.current { border-color: var(--accent); color: var(--accent); background: var(--cobalt-muted); box-shadow: 0 0 0 2px var(--cobalt-muted); }
+.exam-nav-btn.answered { background: var(--accent); color: #fff; border-color: var(--accent); }
+.exam-nav-btn.flagged { border-color: #d97706; background: rgba(245,158,11,0.15); color: #d97706; }
+.exam-nav-btn.flagged.answered { background: #d97706; color: #fff; }
+
+.exam-nav-legend { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+.exam-legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
+.exam-legend-dot {
+    width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+}
+.legend-unanswered { background: var(--bg-surface); border: 1.5px solid var(--border-default); }
+.legend-answered { background: var(--accent); }
+.legend-flagged { background: rgba(245,158,11,0.15); border: 1.5px solid #d97706; }
+.legend-current { background: var(--cobalt-muted); border: 1.5px solid var(--accent); }
+
+.exam-nav-summary { font-size: 11px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6; }
+.exam-nav-summary strong { color: var(--text-primary); }
+
+/* Submit Confirmation Modal */
+.exam-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity var(--duration-base);
+}
+.exam-modal-overlay.visible { opacity: 1; pointer-events: all; }
+.exam-modal {
+    background: var(--bg-card); border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl); padding: 28px 32px; max-width: 420px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center;
+}
+.exam-modal h3 { font-size: 18px; font-weight: 700; color: var(--text-heading); margin-bottom: 8px; }
+.exam-modal p { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6; }
+.exam-modal-warn { color: #d97706; font-weight: 600; }
+.exam-modal-btns { display: flex; gap: 10px; justify-content: center; }
+.exam-modal-cancel {
+    padding: 10px 24px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
+    border: 1px solid var(--border-default); color: var(--text-secondary); background: transparent;
+    cursor: pointer;
+}
+.exam-modal-confirm {
+    padding: 10px 24px; border-radius: var(--radius-md); font-size: 13px; font-weight: 700;
+    border: none; background: var(--accent); color: #fff; cursor: pointer;
+}
+
+/* ── RESULTS MODE ── */
+.results-hero {
+    text-align: center; padding: 32px 20px; margin-bottom: 24px;
+    background: var(--bg-card); border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+}
+.results-score-big {
+    font-size: 64px; font-weight: 800; line-height: 1;
+    background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.results-pass {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: var(--radius-pill); margin-top: 12px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.results-pass.pass { background: rgba(16,185,129,0.12); color: #059669; }
+.results-pass.fail { background: rgba(239,68,68,0.12); color: #dc2626; }
+[data-theme="dark"] .results-pass.pass { color: #34d399; }
+[data-theme="dark"] .results-pass.fail { color: #f87171; }
+.results-subtitle { font-size: 14px; color: var(--text-secondary); margin-top: 10px; }
+
+.results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.results-card {
+    background: var(--bg-card); border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg); padding: 20px;
+}
+.results-card h3 {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.results-card h3 svg { width: 16px; height: 16px; opacity: 0.8; }
+
+/* Section Score Bars */
+.section-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.section-bar-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); width: 100px; flex-shrink: 0; text-align: right; }
+.section-bar-track {
+    flex: 1; height: 22px; background: var(--progress-track); border-radius: var(--radius-pill); position: relative; overflow: hidden;
+}
+.section-bar-fill {
+    height: 100%; border-radius: var(--radius-pill); transition: width 0.8s var(--ease-out-expo);
+    display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;
+    font-size: 10px; font-weight: 700; color: #fff; min-width: 32px;
+}
+.bar-green { background: linear-gradient(90deg, #059669, #34d399); }
+.bar-orange { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.bar-red { background: linear-gradient(90deg, #dc2626, #f87171); }
+.bar-blue { background: var(--gradient-accent); }
+
+/* Time Analysis */
+.time-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+.time-row:last-child { border-bottom: none; }
+.time-section { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.time-value { font-size: 13px; font-weight: 700; font-family: var(--font-mono); color: var(--accent); }
+
+/* Weakness / Strength Tags */
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-item {
+    padding: 6px 14px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600;
+}
+.tag-weakness { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+.tag-strength { background: rgba(16,185,129,0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+[data-theme="dark"] .tag-weakness { color: #f87171; }
+[data-theme="dark"] .tag-strength { color: #34d399; }
+
+.suggestion-list { list-style: none; padding: 0; margin: 0; }
+.suggestion-list li {
+    padding: 8px 0; border-bottom: 1px solid var(--border-subtle);
+    font-size: 13px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 8px;
+}
+.suggestion-list li:last-child { border-bottom: none; }
+.suggestion-list li::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0; margin-top: 6px;
+}
+
+/* Comparison bar */
+.compare-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.compare-label { font-size: 12px; color: var(--text-muted); width: 80px; flex-shrink: 0; }
+.compare-track { flex: 1; height: 10px; background: var(--progress-track); border-radius: var(--radius-pill); position: relative; }
+.compare-fill { height: 100%; border-radius: var(--radius-pill); }
+.compare-marker {
+    position: absolute; top: -4px; width: 2px; height: 18px;
+    background: var(--text-primary); border-radius: 1px;
+}
+.compare-val { font-size: 12px; font-weight: 700; color: var(--text-primary); width: 40px; text-align: right; }
+
+/* Question Review in Results */
+.review-q {
+    background: var(--bg-card); border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 10px;
+}
+.review-q-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.review-q-num {
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+.review-q-num.correct { background: rgba(16,185,129,0.12); color: #059669; }
+.review-q-num.wrong { background: rgba(239,68,68,0.12); color: #dc2626; }
+[data-theme="dark"] .review-q-num.correct { color: #34d399; }
+[data-theme="dark"] .review-q-num.wrong { color: #f87171; }
+.review-q-text { font-size: 14px; color: var(--text-heading); font-weight: 500; }
+.review-q-answers { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.review-answer { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.review-answer-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: var(--radius-sm); }
+.review-answer-tag.your { background: var(--cobalt-muted); color: var(--accent); }
+.review-answer-tag.correct-tag { background: rgba(16,185,129,0.12); color: #059669; }
+
+.results-actions {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; justify-content: center;
+}
+.results-actions a, .results-actions button {
+    padding: 10px 24px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
+    text-decoration: none; cursor: pointer; transition: all var(--duration-fast);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .exam-nav-panel { display: none; }
+    .exam-question-area { padding: 20px 16px; }
+    .mt-grid { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: 1fr; }
+    .exam-topbar { padding: 8px 12px; }
+    .results-score-big { font-size: 48px; }
+}
+
+/* ── Coming Soon Overlay ── */
+.mt-coming-soon-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    animation: mtFadeIn 0.3s ease-out;
+}
+@keyframes mtFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.mt-coming-soon-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: 20px;
+    padding: 40px 36px;
+    max-width: 460px; width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: mtSlideUp 0.35s ease-out;
+}
+@keyframes mtSlideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mt-coming-soon-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--cobalt-muted);
+    display: flex; align-items: center; justify-content: center;
+}
+.mt-coming-soon-icon svg {
+    width: 28px; height: 28px; stroke: var(--accent);
+}
+.mt-coming-soon-card h2 {
+    font-size: 22px; font-weight: 700; color: var(--text-heading);
+    margin: 0 0 12px;
+}
+.mt-coming-soon-card p {
+    font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0;
+}
+.mt-coming-soon-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 24px; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    font-size: 14px; font-weight: 600;
+    border: none; cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.15s;
+}
+.mt-coming-soon-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.mt-coming-soon-btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+}
+.mt-coming-soon-btn-ghost:hover {
+    background: var(--bg-surface); color: var(--text-heading);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Coming Soon Overlay -->
+<div class="mt-coming-soon-overlay" id="mtOverlay">
+    <div class="mt-coming-soon-card">
+        <div class="mt-coming-soon-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/>
+                <polyline points="13 8 16 11 13 14"/>
+            </svg>
+        </div>
+        <h2>Mock Tests - Coming Soon!</h2>
+        <p>We're building a powerful mock test experience with timed exams, sectioned questions, and detailed scoring — just like real placement tests.</p>
+        <p style="margin-top:8px;font-weight:500;color:var(--text-heading);">In the meantime, try our <a href="/quiz" style="color:var(--accent);text-decoration:underline;font-weight:700;">Quizzes</a> for topic-wise practice!</p>
+        <div style="display:flex;gap:10px;margin-top:18px;justify-content:center;flex-wrap:wrap;">
+            <a href="/quiz" class="mt-coming-soon-btn">Try Quizzes Now</a>
+            <button class="mt-coming-soon-btn mt-coming-soon-btn-ghost" onclick="document.getElementById('mtOverlay').style.display='none'">Preview Page</button>
+        </div>
+    </div>
+</div>
+
+<div class="mt-container">
+
+{% if mode == 'select' %}
+{# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TEST SELECTION MODE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
+<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+    <div>
+        <h1 class="mt-page-title">Mock Tests & Evaluation</h1>
+        <p class="mt-page-sub">Simulate real placement exams. Timed, sectioned, and scored just like the actual test.</p>
+    </div>
+    {% if test_history %}
+    <div style="font-size:12px;color:var(--text-muted);text-align:right;">
+        <span style="font-weight:600;color:var(--text-secondary);">{{ test_history|length }}</span> tests attempted
+    </div>
+    {% endif %}
+</div>
+
+{# ── Full-Length Placement Tests ── #}
+<div class="mt-section-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    Full-Length Placement Tests
+</div>
+<div class="mt-grid">
+    {% for test in available_tests if test.category == 'full_length' %}
+    <div class="mt-card">
+        <div class="mt-card-head">
+            <span class="mt-card-name">{{ test.name }}</span>
+            <span class="mt-card-difficulty mt-diff-{{ test.difficulty|default('mixed') }}">{{ test.difficulty|default('Mixed')|title }}</span>
+        </div>
+        <div class="mt-card-meta">
+            <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {{ test.duration_mins }} min
+            </span>
+            <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                {{ test.question_count }} questions
+            </span>
+        </div>
+        <div class="mt-card-sections">
+            <strong>Sections:</strong> {{ test.sections|join(', ') }}
+        </div>
+        {% set prev = test_history|selectattr('test_id', 'equalto', test.id)|list %}
+        {% if prev %}
+        <div class="mt-card-prev">
+            Last attempt: <span class="prev-score">{{ prev[-1].score_pct }}%</span>
+            &middot; {{ prev[-1].date }}
+            {% if prev|length > 1 %} &middot; {{ prev|length }} attempts{% endif %}
+        </div>
+        {% endif %}
+        <div class="mt-card-footer">
+            <a href="/mock-tests/start?test_id={{ test.id }}" class="mt-start-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Start Test
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# ── Company-Specific Mock Tests ── #}
+<div class="mt-section-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+    Company-Specific Mock Tests
+</div>
+<div class="mt-grid">
+    {% set company_colors = {'TCS': '#2196F3', 'Infosys': '#007CC3', 'Wipro': '#4A154B', 'Accenture': '#A100FF', 'Amazon': '#FF9900', 'Microsoft': '#00A4EF'} %}
+    {% for test in available_tests if test.category == 'company' %}
+    <div class="mt-card">
+        <div class="mt-card-head">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="mt-company-logo" style="background:{{ company_colors.get(test.company, '#1E54B7') }};">
+                    {{ test.company[0] }}
+                </div>
+                <div>
+                    <span class="mt-card-name">{{ test.name }}</span>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ test.company }} Pattern</div>
+                </div>
+            </div>
+            <span class="mt-card-difficulty mt-diff-{{ test.difficulty|default('medium') }}">{{ test.difficulty|default('Medium')|title }}</span>
+        </div>
+        <div class="mt-card-meta">
+            <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {{ test.duration_mins }} min
+            </span>
+            <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                {{ test.question_count }} questions
+            </span>
+        </div>
+        <div class="mt-card-sections">
+            <strong>Sections:</strong> {{ test.sections|join(', ') }}
+        </div>
+        {% set prev = test_history|selectattr('test_id', 'equalto', test.id)|list %}
+        {% if prev %}
+        <div class="mt-card-prev">
+            Best: <span class="prev-score">{{ prev|map(attribute='score_pct')|max }}%</span>
+            &middot; {{ prev|length }} attempt{{ 's' if prev|length > 1 else '' }}
+        </div>
+        {% endif %}
+        <div class="mt-card-footer">
+            <a href="/mock-tests/start?test_id={{ test.id }}" class="mt-start-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Start Test
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# ── Section-Wise Practice Tests ── #}
+<div class="mt-section-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    Section-Wise Practice
+</div>
+<div class="mt-grid">
+    {% set section_icons = {'Quantitative': '#1E54B7', 'Reasoning': '#7C3AED', 'Verbal': '#059669', 'Coding': '#DC2626'} %}
+    {% for test in available_tests if test.category == 'section' %}
+    <div class="mt-card">
+        <div class="mt-card-head">
+            <span class="mt-card-name">{{ test.name }}</span>
+            <span class="mt-card-difficulty mt-diff-{{ test.difficulty|default('mixed') }}">{{ test.difficulty|default('Mixed')|title }}</span>
+        </div>
+        <div class="mt-card-meta">
+            <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {{ test.duration_mins }} min
+            </span>
+            <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                {{ test.question_count }} questions
+            </span>
+        </div>
+        <div class="mt-card-sections">
+            <strong>Focus:</strong> {{ test.sections[0] if test.sections else 'General' }}
+        </div>
+        {% set prev = test_history|selectattr('test_id', 'equalto', test.id)|list %}
+        {% if prev %}
+        <div class="mt-card-prev">
+            Best: <span class="prev-score">{{ prev|map(attribute='score_pct')|max }}%</span>
+            &middot; {{ prev|length }} attempt{{ 's' if prev|length > 1 else '' }}
+        </div>
+        {% endif %}
+        <div class="mt-card-footer">
+            <a href="/mock-tests/start?test_id={{ test.id }}" class="mt-start-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Start Test
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
+{% elif mode == 'active' %}
+{# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ACTIVE TEST MODE (Exam Interface)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
+<form method="POST" action="/mock-tests/submit" id="exam-form">
+<input type="hidden" name="question_data" value="{{ question_data_json }}">
+<input type="hidden" name="answers_json" id="answers-json" value="{}">
+<input type="hidden" name="flagged_json" id="flagged-json" value="[]">
+<input type="hidden" name="time_remaining" id="time-remaining" value="{{ duration_mins * 60 }}">
+
+<div class="exam-shell">
+    <!-- Exam Top Bar -->
+    <div class="exam-topbar">
+        <span class="exam-title">{{ test_name }}</span>
+        <div class="exam-timer" id="exam-timer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="timer-display">{{ '%02d' | format(duration_mins) }}:00</span>
+        </div>
+        <button type="button" class="exam-btn-submit" onclick="showSubmitModal()">Submit Test</button>
+    </div>
+
+    <!-- Section Tabs -->
+    {% if sections|length > 1 %}
+    <div class="exam-section-tabs" id="section-tabs">
+        {% for sec in sections %}
+        <button type="button" class="exam-section-tab {% if loop.first %}active{% endif %}" data-section="{{ sec }}" onclick="switchSection('{{ sec }}', this)">
+            {{ sec }}
+        </button>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="exam-body">
+        <!-- Question Display -->
+        <div class="exam-question-area" id="question-area">
+            <div class="exam-q-number" id="q-number">Question 1 of {{ questions|length }}</div>
+            <div class="exam-q-text" id="q-text"></div>
+            <div class="exam-options" id="q-options"></div>
+            <div class="exam-q-actions">
+                <button type="button" class="exam-btn-review" id="btn-flag" onclick="toggleFlag()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    Mark for Review
+                </button>
+                <button type="button" class="exam-btn-clear" onclick="clearAnswer()">Clear Response</button>
+                <div class="exam-nav-btns">
+                    <button type="button" class="exam-btn-nav" id="btn-prev" onclick="navQuestion(-1)">&larr; Previous</button>
+                    <button type="button" class="exam-btn-nav" id="btn-next" onclick="navQuestion(1)">Next &rarr;</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Panel -->
+        <div class="exam-nav-panel">
+            <div class="exam-nav-title">Question Navigator</div>
+            <div class="exam-nav-summary" id="nav-summary">
+                Answered: <strong>0</strong> / {{ questions|length }}
+                &nbsp;&middot;&nbsp; Flagged: <strong>0</strong>
+            </div>
+            <div class="exam-nav-grid" id="nav-grid">
+                {% for q in questions %}
+                <button type="button" class="exam-nav-btn {% if loop.first %}current{% endif %}" data-idx="{{ loop.index0 }}" onclick="goToQuestion({{ loop.index0 }})">{{ loop.index }}</button>
+                {% endfor %}
+            </div>
+            <div class="exam-nav-legend">
+                <div class="exam-legend-item"><span class="exam-legend-dot legend-current"></span> Current</div>
+                <div class="exam-legend-item"><span class="exam-legend-dot legend-answered"></span> Answered</div>
+                <div class="exam-legend-item"><span class="exam-legend-dot legend-flagged"></span> Flagged</div>
+                <div class="exam-legend-item"><span class="exam-legend-dot legend-unanswered"></span> Not Visited</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="exam-modal-overlay" id="submit-modal">
+    <div class="exam-modal">
+        <h3>Submit Test?</h3>
+        <p id="modal-summary">You have answered all questions.</p>
+        <div class="exam-modal-btns">
+            <button type="button" class="exam-modal-cancel" onclick="hideSubmitModal()">Go Back</button>
+            <button type="button" class="exam-modal-confirm" onclick="confirmSubmit()">Confirm Submit</button>
+        </div>
+    </div>
+</div>
+</form>
+
+
+{% elif mode == 'results' %}
+{# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESULTS MODE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ #}
+
+<!-- Score Hero -->
+<div class="results-hero">
+    <div class="results-score-big">{{ score_pct }}%</div>
+    {% if score_pct >= 60 %}
+    <div class="results-pass pass">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        PASSED
+    </div>
+    {% else %}
+    <div class="results-pass fail">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        NEEDS IMPROVEMENT
+    </div>
+    {% endif %}
+    <div class="results-subtitle">
+        {% if score_pct >= 80 %}Excellent performance! You are well prepared for this section.
+        {% elif score_pct >= 60 %}Good attempt. Focus on weak areas to push your score higher.
+        {% elif score_pct >= 40 %}Average performance. Targeted practice on weaknesses will help significantly.
+        {% else %}This needs focused revision. Review the analysis below and create a study plan.
+        {% endif %}
+    </div>
+</div>
+
+<div class="results-grid">
+    <!-- Section-wise Score Breakdown -->
+    <div class="results-card">
+        <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Section Scores
+        </h3>
+        {% for sec_name, sec_score in section_scores.items() %}
+        <div class="section-bar-row">
+            <span class="section-bar-label">{{ sec_name }}</span>
+            <div class="section-bar-track">
+                <div class="section-bar-fill {% if sec_score >= 70 %}bar-green{% elif sec_score >= 45 %}bar-orange{% else %}bar-red{% endif %}" style="width:{{ sec_score }}%;">
+                    {{ sec_score }}%
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Time Analysis -->
+    <div class="results-card">
+        <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Time Analysis
+        </h3>
+        {% for sec_name, sec_time in time_analysis.items() %}
+        <div class="time-row">
+            <span class="time-section">{{ sec_name }}</span>
+            <span class="time-value">{{ sec_time }} min</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Weaknesses -->
+    <div class="results-card">
+        <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Weaknesses Identified
+        </h3>
+        {% if weaknesses %}
+        <div class="tag-list">
+            {% for w in weaknesses %}
+            <span class="tag-item tag-weakness">{{ w }}</span>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="font-size:13px;color:var(--text-muted);">No major weaknesses detected. Keep it up!</p>
+        {% endif %}
+    </div>
+
+    <!-- Strengths -->
+    <div class="results-card">
+        <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Strengths
+        </h3>
+        {% if strengths %}
+        <div class="tag-list">
+            {% for s in strengths %}
+            <span class="tag-item tag-strength">{{ s }}</span>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="font-size:13px;color:var(--text-muted);">Complete more questions to identify your strengths.</p>
+        {% endif %}
+    </div>
+
+    <!-- Improvement Suggestions -->
+    <div class="results-card" style="grid-column: 1 / -1;">
+        <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+            Improvement Suggestions
+        </h3>
+        <ul class="suggestion-list">
+            {% if weaknesses %}
+                {% for w in weaknesses[:3] %}
+                <li>Focus on <strong>{{ w }}</strong> — practice dedicated problems daily for at least 30 minutes.</li>
+                {% endfor %}
+            {% endif %}
+            {% if score_pct < 80 %}
+            <li>Attempt timed section-wise tests to build speed and accuracy under pressure.</li>
+            {% endif %}
+            {% if time_analysis %}
+            <li>Review your time distribution — ensure you are not spending too long on any single section.</li>
+            {% endif %}
+            <li>Revisit incorrectly answered questions below and understand the reasoning behind each correct answer.</li>
+        </ul>
+    </div>
+
+    <!-- Comparison with Average -->
+    <div class="results-card" style="grid-column: 1 / -1;">
+        <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            How You Compare
+        </h3>
+        <div class="compare-row">
+            <span class="compare-label">You</span>
+            <div class="compare-track">
+                <div class="compare-fill bar-blue" style="width:{{ score_pct }}%;height:100%;border-radius:var(--radius-pill);"></div>
+            </div>
+            <span class="compare-val">{{ score_pct }}%</span>
+        </div>
+        <div class="compare-row">
+            <span class="compare-label">Average</span>
+            <div class="compare-track" style="position:relative;">
+                <div class="compare-fill" style="width:{{ avg_score|default(52) }}%;height:100%;border-radius:var(--radius-pill);background:var(--progress-track);border:1px solid var(--border-default);"></div>
+            </div>
+            <span class="compare-val" style="color:var(--text-muted);">{{ avg_score|default(52) }}%</span>
+        </div>
+        {% if score_pct > (avg_score|default(52)) %}
+        <p style="font-size:12px;color:#059669;margin-top:8px;font-weight:600;">
+            You scored {{ score_pct - (avg_score|default(52)) }}% above the average. Great work!
+        </p>
+        {% elif score_pct < (avg_score|default(52)) %}
+        <p style="font-size:12px;color:#d97706;margin-top:8px;font-weight:600;">
+            You are {{ (avg_score|default(52)) - score_pct }}% below the average. Focus on the weak areas identified above.
+        </p>
+        {% else %}
+        <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">You matched the average score exactly.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Question-by-Question Review -->
+<div class="mt-section-label" style="margin-top:28px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Question-by-Question Review
+</div>
+{% for r in results %}
+<div class="review-q">
+    <div class="review-q-head">
+        <span class="review-q-num {% if r.is_correct %}correct{% else %}wrong{% endif %}">
+            Q{{ loop.index }} {% if r.is_correct %}&#10003;{% else %}&#10007;{% endif %}
+        </span>
+        <span class="review-q-text">{{ r.question }}</span>
+    </div>
+    <div class="review-q-answers">
+        <div class="review-answer">
+            <span class="review-answer-tag your">Your Answer</span>
+            <span style="font-size:13px;color:var(--text-primary);">{{ r.your_answer }}</span>
+        </div>
+        {% if not r.is_correct %}
+        <div class="review-answer">
+            <span class="review-answer-tag correct-tag">Correct</span>
+            <span style="font-size:13px;color:var(--text-primary);">{{ r.correct_answer }}</span>
+        </div>
+        {% endif %}
+        {% if r.explanation %}
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;padding:8px 10px;background:var(--bg-surface);border-radius:var(--radius-md);line-height:1.6;">
+            {{ r.explanation }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<!-- Actions -->
+<div class="results-actions">
+    <a href="/mock-tests" style="background:var(--accent);color:#fff;border:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:4px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Retake Test
+    </a>
+    <a href="#question-review-top" onclick="document.querySelector('.mt-section-label:last-of-type').scrollIntoView({behavior:'smooth'});return false;" style="background:transparent;color:var(--accent);border:1.5px solid var(--accent);">
+        Review Mistakes
+    </a>
+    <a href="/mock-tests" style="background:transparent;color:var(--text-secondary);border:1px solid var(--border-default);">
+        Back to All Tests
+    </a>
+</div>
+
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if mode == 'active' %}
+<script>
+(function(){
+    'use strict';
+
+    /* ── State ── */
+    var questions = JSON.parse('{{ question_data_json|safe }}');
+    var totalQ = questions.length;
+    var currentIdx = 0;
+    var answers = {};       // { questionIndex: selectedOptionIndex }
+    var flagged = {};       // { questionIndex: true }
+    var durationSecs = {{ duration_mins }} * 60;
+    var timeLeft = durationSecs;
+    var sections = {{ sections|tojson }};
+    var timerInterval = null;
+
+    /* ── Timer ── */
+    function padZero(n){ return n < 10 ? '0' + n : '' + n; }
+
+    function updateTimerDisplay(){
+        var h = Math.floor(timeLeft / 3600);
+        var m = Math.floor((timeLeft % 3600) / 60);
+        var s = timeLeft % 60;
+        var display = document.getElementById('timer-display');
+        var timerEl = document.getElementById('exam-timer');
+        if(h > 0){
+            display.textContent = padZero(h) + ':' + padZero(m) + ':' + padZero(s);
+        } else {
+            display.textContent = padZero(m) + ':' + padZero(s);
+        }
+
+        timerEl.classList.remove('warning', 'danger');
+        if(timeLeft <= 60){
+            timerEl.classList.add('danger');
+        } else if(timeLeft <= 300){
+            timerEl.classList.add('warning');
+        }
+    }
+
+    function tick(){
+        timeLeft--;
+        if(timeLeft <= 0){
+            timeLeft = 0;
+            updateTimerDisplay();
+            clearInterval(timerInterval);
+            autoSubmit();
+            return;
+        }
+        updateTimerDisplay();
+    }
+
+    function startTimer(){
+        updateTimerDisplay();
+        timerInterval = setInterval(tick, 1000);
+    }
+
+    function autoSubmit(){
+        alert('Time is up! Your test will be submitted now.');
+        confirmSubmit();
+    }
+
+    /* ── Question Rendering ── */
+    function renderQuestion(){
+        var q = questions[currentIdx];
+        document.getElementById('q-number').textContent = 'Question ' + (currentIdx + 1) + ' of ' + totalQ;
+        document.getElementById('q-text').textContent = q.question;
+
+        var optionsHtml = '';
+        var letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+        for(var i = 0; i < q.options.length; i++){
+            var sel = (answers[currentIdx] === i) ? ' selected' : '';
+            optionsHtml += '<div class="exam-option' + sel + '" data-opt="' + i + '" onclick="selectOption(' + i + ')">' +
+                '<span class="exam-option-letter">' + letters[i] + '</span>' +
+                '<span class="exam-option-text">' + escapeHtml(q.options[i]) + '</span>' +
+            '</div>';
+        }
+        document.getElementById('q-options').innerHTML = optionsHtml;
+
+        // Flag button state
+        var flagBtn = document.getElementById('btn-flag');
+        if(flagged[currentIdx]){
+            flagBtn.classList.add('flagged');
+            flagBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Flagged for Review';
+        } else {
+            flagBtn.classList.remove('flagged');
+            flagBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-right:4px;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Mark for Review';
+        }
+
+        // Prev/Next buttons
+        document.getElementById('btn-prev').disabled = (currentIdx === 0);
+        document.getElementById('btn-next').textContent = (currentIdx === totalQ - 1) ? 'Finish' : 'Next \u2192';
+
+        // Nav grid highlighting
+        updateNavGrid();
+
+        // Active section tab
+        if(sections.length > 1 && q.section){
+            var tabs = document.querySelectorAll('.exam-section-tab');
+            tabs.forEach(function(tab){
+                tab.classList.toggle('active', tab.getAttribute('data-section') === q.section);
+            });
+        }
+    }
+
+    function escapeHtml(text){
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
+    /* ── Option Selection ── */
+    window.selectOption = function(optIdx){
+        answers[currentIdx] = optIdx;
+        // Re-render option styles
+        var opts = document.querySelectorAll('.exam-option');
+        opts.forEach(function(el){
+            var idx = parseInt(el.getAttribute('data-opt'));
+            el.classList.toggle('selected', idx === optIdx);
+        });
+        updateNavGrid();
+        syncHidden();
+    };
+
+    /* ── Navigation ── */
+    window.navQuestion = function(dir){
+        var next = currentIdx + dir;
+        if(next < 0) next = 0;
+        if(next >= totalQ){
+            // On last question pressing Next shows submit modal
+            showSubmitModal();
+            return;
+        }
+        currentIdx = next;
+        renderQuestion();
+    };
+
+    window.goToQuestion = function(idx){
+        if(idx < 0 || idx >= totalQ) return;
+        currentIdx = idx;
+        renderQuestion();
+    };
+
+    /* ── Section Switching ── */
+    window.switchSection = function(sectionName, tabEl){
+        // Find first question in that section
+        for(var i = 0; i < questions.length; i++){
+            if(questions[i].section === sectionName){
+                currentIdx = i;
+                renderQuestion();
+                break;
+            }
+        }
+        var tabs = document.querySelectorAll('.exam-section-tab');
+        tabs.forEach(function(t){ t.classList.remove('active'); });
+        tabEl.classList.add('active');
+    };
+
+    /* ── Flag ── */
+    window.toggleFlag = function(){
+        if(flagged[currentIdx]){
+            delete flagged[currentIdx];
+        } else {
+            flagged[currentIdx] = true;
+        }
+        renderQuestion();
+        syncHidden();
+    };
+
+    /* ── Clear Answer ── */
+    window.clearAnswer = function(){
+        delete answers[currentIdx];
+        renderQuestion();
+        syncHidden();
+    };
+
+    /* ── Nav Grid ── */
+    function updateNavGrid(){
+        var btns = document.querySelectorAll('.exam-nav-btn');
+        var answeredCount = 0;
+        var flaggedCount = 0;
+        btns.forEach(function(btn){
+            var idx = parseInt(btn.getAttribute('data-idx'));
+            btn.className = 'exam-nav-btn';
+            if(idx === currentIdx) btn.classList.add('current');
+            if(answers[idx] !== undefined){
+                btn.classList.add('answered');
+                answeredCount++;
+            }
+            if(flagged[idx]){
+                btn.classList.add('flagged');
+                flaggedCount++;
+            }
+        });
+        document.getElementById('nav-summary').innerHTML =
+            'Answered: <strong>' + answeredCount + '</strong> / ' + totalQ +
+            '&nbsp;&middot;&nbsp; Flagged: <strong>' + flaggedCount + '</strong>';
+    }
+
+    /* ── Sync Hidden Fields ── */
+    function syncHidden(){
+        document.getElementById('answers-json').value = JSON.stringify(answers);
+        document.getElementById('flagged-json').value = JSON.stringify(Object.keys(flagged).map(Number));
+        document.getElementById('time-remaining').value = timeLeft;
+    }
+
+    /* ── Submit Modal ── */
+    window.showSubmitModal = function(){
+        var answeredCount = Object.keys(answers).length;
+        var unanswered = totalQ - answeredCount;
+        var flaggedCount = Object.keys(flagged).length;
+        var msg = 'You have answered <strong>' + answeredCount + '</strong> out of <strong>' + totalQ + '</strong> questions.';
+        if(unanswered > 0){
+            msg += '<br><span class="exam-modal-warn">' + unanswered + ' question' + (unanswered > 1 ? 's' : '') + ' unanswered!</span>';
+        }
+        if(flaggedCount > 0){
+            msg += '<br><span style="color:var(--text-muted);font-size:12px;">' + flaggedCount + ' question' + (flaggedCount > 1 ? 's' : '') + ' flagged for review.</span>';
+        }
+        document.getElementById('modal-summary').innerHTML = msg;
+        document.getElementById('submit-modal').classList.add('visible');
+    };
+
+    window.hideSubmitModal = function(){
+        document.getElementById('submit-modal').classList.remove('visible');
+    };
+
+    window.confirmSubmit = function(){
+        syncHidden();
+        clearInterval(timerInterval);
+        document.getElementById('exam-form').submit();
+    };
+
+    /* ── Prevent Accidental Leave ── */
+    window.addEventListener('beforeunload', function(e){
+        e.preventDefault();
+        e.returnValue = '';
+    });
+
+    /* ── Keyboard Shortcuts ── */
+    document.addEventListener('keydown', function(e){
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if(e.key === 'ArrowRight' || e.key === 'n') navQuestion(1);
+        if(e.key === 'ArrowLeft' || e.key === 'p') navQuestion(-1);
+        if(e.key === 'a') selectOption(0);
+        if(e.key === 'b') selectOption(1);
+        if(e.key === 'c') selectOption(2);
+        if(e.key === 'd') selectOption(3);
+        if(e.key === 'f') toggleFlag();
+    });
+
+    /* ── Init ── */
+    startTimer();
+    renderQuestion();
+})();
+</script>
+{% endif %}
+{% endblock %}

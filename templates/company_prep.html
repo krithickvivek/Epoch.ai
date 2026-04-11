@@ -1,0 +1,1442 @@
+{% extends "base.html" %}
+{% block title %}Company Prep — Epoch.ai{% endblock %}
+{% block head %}
+<style>
+/* ── Company Prep Page Styles ── */
+.cp-hero {
+    background: var(--gradient-accent);
+    border-radius: var(--radius-xl);
+    padding: 36px 40px;
+    margin-bottom: 28px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.cp-hero::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.cp-hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+}
+.cp-hero-sub {
+    font-size: 14px;
+    opacity: 0.85;
+    margin-bottom: 20px;
+}
+.cp-hero-stats {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+}
+.cp-hero-stat {
+    text-align: center;
+}
+.cp-hero-stat-val {
+    font-size: 26px;
+    font-weight: 700;
+    display: block;
+}
+.cp-hero-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.75;
+}
+
+/* ── Company Pills / Tab Selector ── */
+.cp-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    padding: 6px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+}
+.cp-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out-expo);
+    white-space: nowrap;
+}
+.cp-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+.cp-tab.active {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--card-shadow);
+}
+.cp-tab-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+/* ── Company Cards Grid (overview) ── */
+.cp-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+.cp-company-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    transition: all var(--duration-base) var(--ease-out-expo);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+.cp-company-card:hover {
+    box-shadow: var(--card-hover-shadow);
+    transform: translateY(-2px);
+    border-color: var(--border-default);
+}
+.cp-company-card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.cp-card-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 20px;
+    color: #fff;
+    flex-shrink: 0;
+}
+.cp-card-info h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+.cp-card-info span {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.cp-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+.cp-card-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+.cp-card-meta-label {
+    color: var(--text-muted);
+}
+.cp-card-meta-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.cp-difficulty {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+}
+.cp-diff-easy     { background: rgba(16,185,129,0.12); color: #059669; }
+.cp-diff-moderate { background: rgba(245,158,11,0.12); color: #D97706; }
+.cp-diff-hard     { background: rgba(239,68,68,0.12);  color: #DC2626; }
+.cp-card-sections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 12px;
+}
+.cp-section-chip {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    font-weight: 500;
+}
+
+/* ── Detailed Company Section (per-tab content) ── */
+.cp-detail {
+    display: none;
+}
+.cp-detail.active {
+    display: block;
+}
+.cp-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.cp-detail-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 26px;
+    color: #fff;
+    flex-shrink: 0;
+}
+.cp-detail-title h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-heading);
+    margin: 0;
+}
+.cp-detail-title p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 2px 0 0;
+}
+
+/* ── Sub-sections within detail ── */
+.cp-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+.cp-section h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-heading);
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cp-section h3 .cp-section-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* ── Exam Pattern Table ── */
+.cp-pattern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+}
+.cp-pattern-table th {
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.cp-pattern-table th:first-child { border-radius: var(--radius-md) 0 0 0; }
+.cp-pattern-table th:last-child  { border-radius: 0 var(--radius-md) 0 0; }
+.cp-pattern-table td {
+    padding: 10px 14px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.cp-pattern-table tr:last-child td { border-bottom: none; }
+.cp-pattern-table tr:hover td {
+    background: var(--bg-hover);
+}
+
+/* ── Strategy list ── */
+.cp-strategy-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.cp-strategy-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.55;
+}
+.cp-strategy-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ── Sample Questions ── */
+.cp-sample-q {
+    padding: 14px 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.55;
+}
+.cp-sample-q-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+.cp-sample-q-type {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+
+/* ── Timeline ── */
+.cp-timeline {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 2px;
+    margin-bottom: 28px;
+}
+.cp-timeline-month {
+    text-align: center;
+    padding: 6px 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.cp-timeline-bar {
+    height: 6px;
+    border-radius: 3px;
+    opacity: 0.2;
+    grid-column: span 1;
+}
+.cp-timeline-bar.active {
+    opacity: 1;
+}
+.cp-timeline-company-row {
+    display: contents;
+}
+.cp-timeline-label {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 8px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cp-timeline-label-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ── Comparison Table ── */
+.cp-compare-wrap {
+    overflow-x: auto;
+    margin-bottom: 28px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+}
+.cp-compare-table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.cp-compare-table thead th {
+    background: var(--bg-surface);
+    padding: 12px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+    white-space: nowrap;
+}
+.cp-compare-table tbody td {
+    padding: 12px 14px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
+}
+.cp-compare-table tbody tr:last-child td { border-bottom: none; }
+.cp-compare-table tbody tr:hover td { background: var(--bg-hover); }
+.cp-compare-company-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.cp-compare-logo {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+/* ── Overview / All-companies grid toggle ── */
+.cp-view-toggle {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+}
+.cp-view-btn {
+    padding: 7px 16px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: all var(--duration-fast);
+}
+.cp-view-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .cp-hero { padding: 24px 20px; }
+    .cp-hero h1 { font-size: 22px; }
+    .cp-hero-stats { gap: 20px; }
+    .cp-tabs { gap: 4px; padding: 4px; }
+    .cp-tab { padding: 8px 12px; font-size: 12px; }
+    .cp-tab-logo { width: 22px; height: 22px; font-size: 11px; }
+    .cp-cards-grid { grid-template-columns: 1fr; }
+    .cp-compare-wrap { margin-left: -12px; margin-right: -12px; border-radius: 0; }
+    .cp-section { padding: 16px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- ═══════════════════════════════════════════
+         HERO
+         ═══════════════════════════════════════════ -->
+    <div class="cp-hero">
+        <h1>Company-Specific Preparation</h1>
+        <p class="cp-hero-sub">Targeted practice for India's top recruiters. Master each company's unique exam pattern, question style, and hiring process.</p>
+        <div class="cp-hero-stats">
+            <div class="cp-hero-stat">
+                <span class="cp-hero-stat-val">6</span>
+                <span class="cp-hero-stat-label">Companies</span>
+            </div>
+            <div class="cp-hero-stat">
+                <span class="cp-hero-stat-val">{{ companies|length if companies else 6 }}</span>
+                <span class="cp-hero-stat-label">Exam Patterns</span>
+            </div>
+            <div class="cp-hero-stat">
+                <span class="cp-hero-stat-val">150+</span>
+                <span class="cp-hero-stat-label">Sample Questions</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         VIEW TOGGLE: Overview / Detailed
+         ═══════════════════════════════════════════ -->
+    <div class="cp-view-toggle">
+        <button class="cp-view-btn active" onclick="cpSetView('overview')" id="cp-view-overview">Overview</button>
+        <button class="cp-view-btn" onclick="cpSetView('detailed')" id="cp-view-detailed">Detailed Prep</button>
+        <button class="cp-view-btn" onclick="cpSetView('timeline')" id="cp-view-timeline">Hiring Timeline</button>
+        <button class="cp-view-btn" onclick="cpSetView('compare')" id="cp-view-compare">Compare All</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         VIEW: OVERVIEW — Company Cards Grid
+         ═══════════════════════════════════════════ -->
+    <div id="cp-panel-overview">
+
+        {# ── Hardcoded company data for cards ── #}
+        {% set card_companies = [
+            {"name": "TCS", "exam": "TCS NQT", "letter": "T", "color": "#2B3990", "difficulty": "Moderate", "diff_class": "moderate", "package": "3.36 - 7 LPA", "sections": ["Verbal", "Quant", "Reasoning", "Programming"], "months": "Aug - Oct"},
+            {"name": "Infosys", "exam": "InfyTQ / SP", "letter": "I", "color": "#007CC3", "difficulty": "Moderate", "diff_class": "moderate", "package": "3.6 - 9.5 LPA", "sections": ["Aptitude", "Logical", "Verbal", "Programming", "Puzzle"], "months": "Sep - Nov"},
+            {"name": "Wipro", "exam": "NLTH / Elite", "letter": "W", "color": "#44156B", "difficulty": "Easy-Moderate", "diff_class": "easy", "package": "3.5 - 6.5 LPA", "sections": ["Aptitude", "Written", "Technical"], "months": "Aug - Oct"},
+            {"name": "Accenture", "exam": "Recruitment", "letter": "A", "color": "#A100FF", "difficulty": "Moderate", "diff_class": "moderate", "package": "4.5 - 6.5 LPA", "sections": ["Cognitive", "Technical", "Coding"], "months": "Sep - Dec"},
+            {"name": "Amazon", "exam": "SDE Assessment", "letter": "A", "color": "#FF9900", "difficulty": "Hard", "diff_class": "hard", "package": "12 - 32 LPA", "sections": ["Online Assessment", "Technical Rounds", "Behavioral/LP"], "months": "Jul - Sep"},
+            {"name": "Microsoft", "exam": "SDE Hiring", "letter": "M", "color": "#00A4EF", "difficulty": "Hard", "diff_class": "hard", "package": "15 - 42 LPA", "sections": ["Online Assessment", "Technical", "Group Fly"], "months": "Aug - Oct"}
+        ] %}
+
+        <div class="cp-cards-grid">
+            {% for c in card_companies %}
+            <div class="cp-company-card" onclick="cpShowCompany('{{ c.name|lower }}')">
+                <div class="cp-company-card-top">
+                    <div class="cp-card-logo" style="background:{{ c.color }};">{{ c.letter }}</div>
+                    <div class="cp-card-info">
+                        <h3>{{ c.name }}</h3>
+                        <span>{{ c.exam }}</span>
+                    </div>
+                </div>
+                <div class="cp-card-meta">
+                    <div class="cp-card-meta-row">
+                        <span class="cp-card-meta-label">Difficulty</span>
+                        <span class="cp-difficulty cp-diff-{{ c.diff_class }}">{{ c.difficulty }}</span>
+                    </div>
+                    <div class="cp-card-meta-row">
+                        <span class="cp-card-meta-label">Avg Package</span>
+                        <span class="cp-card-meta-value">{{ c.package }}</span>
+                    </div>
+                    <div class="cp-card-meta-row">
+                        <span class="cp-card-meta-label">Hiring Window</span>
+                        <span class="cp-card-meta-value">{{ c.months }}</span>
+                    </div>
+                </div>
+                <div class="cp-card-sections">
+                    {% for s in c.sections %}
+                    <span class="cp-section-chip">{{ s }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         VIEW: DETAILED — Tabbed Company Sections
+         ═══════════════════════════════════════════ -->
+    <div id="cp-panel-detailed" style="display:none;">
+
+        <!-- Company Tab Pills -->
+        <div class="cp-tabs" id="cp-company-tabs">
+            <button class="cp-tab active" onclick="cpSwitchTab('tcs')">
+                <span class="cp-tab-logo" style="background:#2B3990;">T</span> TCS NQT
+            </button>
+            <button class="cp-tab" onclick="cpSwitchTab('infosys')">
+                <span class="cp-tab-logo" style="background:#007CC3;">I</span> Infosys
+            </button>
+            <button class="cp-tab" onclick="cpSwitchTab('wipro')">
+                <span class="cp-tab-logo" style="background:#44156B;">W</span> Wipro
+            </button>
+            <button class="cp-tab" onclick="cpSwitchTab('accenture')">
+                <span class="cp-tab-logo" style="background:#A100FF;">A</span> Accenture
+            </button>
+            <button class="cp-tab" onclick="cpSwitchTab('amazon')">
+                <span class="cp-tab-logo" style="background:#FF9900;">A</span> Amazon
+            </button>
+            <button class="cp-tab" onclick="cpSwitchTab('microsoft')">
+                <span class="cp-tab-logo" style="background:#00A4EF;">M</span> Microsoft
+            </button>
+        </div>
+
+        <!-- ──────────────────────────────────────────
+             TCS NQT
+             ────────────────────────────────────────── -->
+        <div class="cp-detail active" id="cp-tab-tcs">
+            <div class="cp-detail-header">
+                <div class="cp-detail-logo" style="background:#2B3990;">T</div>
+                <div class="cp-detail-title">
+                    <h2>TCS National Qualifier Test (NQT)</h2>
+                    <p>India's largest mass recruiter. NQT is a gateway for Ninja, Digital, and Prime roles.</p>
+                </div>
+            </div>
+
+            <!-- Overview -->
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(43,57,144,0.12);color:#2B3990;">i</span> Overview</h3>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                    <p>TCS NQT is conducted twice a year and serves as the primary hiring assessment for TCS. The test is adaptive — your performance in early sections determines the difficulty of later questions. Scores are valid for 2 years and can be used across multiple TCS hiring drives.</p>
+                    <p style="margin-top:8px;"><strong>Eligibility:</strong> 60% throughout (10th, 12th, UG). No active backlogs. BE/BTech/MCA/MSc graduates.</p>
+                    <p style="margin-top:8px;"><strong>Roles via NQT:</strong></p>
+                    <ul style="margin:4px 0 0 16px;padding:0;">
+                        <li><strong>Ninja</strong> — 3.36 LPA (score above sectional cutoffs)</li>
+                        <li><strong>Digital</strong> — 7 LPA (score in top percentile)</li>
+                        <li><strong>Prime</strong> — 9 LPA (invite-only, top NQT scores + CodeVita)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Exam Pattern -->
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(43,57,144,0.12);color:#2B3990;">P</span> Exam Pattern</h3>
+                <table class="cp-pattern-table">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Questions</th>
+                            <th>Duration</th>
+                            <th>Key Topics</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Verbal Ability</strong></td>
+                            <td>24</td>
+                            <td>30 min</td>
+                            <td>Reading Comprehension, Grammar, Sentence Completion, Para Jumbles</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Quantitative Aptitude</strong></td>
+                            <td>26</td>
+                            <td>40 min</td>
+                            <td>Number Systems, Algebra, Geometry, P&C, Probability, DI</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reasoning Ability</strong></td>
+                            <td>30</td>
+                            <td>50 min</td>
+                            <td>Puzzles, Arrangements, Blood Relations, Coding-Decoding, Syllogisms</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Programming Logic</strong></td>
+                            <td>10</td>
+                            <td>15 min</td>
+                            <td>Pseudocode, Output Prediction, Basic DSA concepts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Coding (Ninja/Digital)</strong></td>
+                            <td>1-2</td>
+                            <td>15 min</td>
+                            <td>String manipulation, Arrays, Basic Algorithms</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;font-size:12px;color:var(--text-muted);padding:10px;background:var(--bg-surface);border-radius:var(--radius-md);">
+                    <strong>Note:</strong> No negative marking. Each section has a separate timer. The coding section uses C / C++ / Java / Python.
+                </div>
+            </div>
+
+            <!-- Strategy -->
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(43,57,144,0.12);color:#2B3990;">S</span> Preparation Strategy</h3>
+                <ul class="cp-strategy-list">
+                    <li><span class="cp-strategy-num" style="background:#2B3990;">1</span> Start with Verbal — it is the easiest section to score. Practice 2 RCs daily and revise grammar rules.</li>
+                    <li><span class="cp-strategy-num" style="background:#2B3990;">2</span> For Quant, focus on Number Systems, Percentages, P&C, and DI. These repeat every year with slight variation.</li>
+                    <li><span class="cp-strategy-num" style="background:#2B3990;">3</span> Reasoning is the heaviest section. Practice seating arrangement, puzzles, and syllogisms from previous NQT papers.</li>
+                    <li><span class="cp-strategy-num" style="background:#2B3990;">4</span> Programming Logic requires understanding pseudocode output — practice 20-30 pseudocode problems to build pattern recognition.</li>
+                    <li><span class="cp-strategy-num" style="background:#2B3990;">5</span> For Digital role, solve medium-level coding problems on arrays and strings. HackerRank easy-medium tier is sufficient.</li>
+                    <li><span class="cp-strategy-num" style="background:#2B3990;">6</span> Take at least 5 full-length mock tests under timed conditions. Analyze weak areas after each mock.</li>
+                </ul>
+            </div>
+
+            <!-- Sample Questions -->
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(43,57,144,0.12);color:#2B3990;">Q</span> Previous Year Sample Questions</h3>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Quantitative Aptitude <span class="cp-sample-q-type" style="background:rgba(43,57,144,0.1);color:#2B3990;">Number System</span></div>
+                    If the sum of two numbers is 55 and the HCF and LCM of these numbers are 5 and 120 respectively, then the sum of the reciprocals of the numbers is equal to?
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Reasoning <span class="cp-sample-q-type" style="background:rgba(43,57,144,0.1);color:#2B3990;">Coding-Decoding</span></div>
+                    In a certain code language, "COMPUTER" is written as "GSQTYXIV". How will "LANGUAGE" be written in that code?
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Programming Logic <span class="cp-sample-q-type" style="background:rgba(43,57,144,0.1);color:#2B3990;">Pseudocode</span></div>
+                    What is the output of: x = 5; y = 0; while(x > 0) { y = y + x; x = x - 1; } print(y);
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ──────────────────────────────────────────
+             INFOSYS
+             ────────────────────────────────────────── -->
+        <div class="cp-detail" id="cp-tab-infosys">
+            <div class="cp-detail-header">
+                <div class="cp-detail-logo" style="background:#007CC3;">I</div>
+                <div class="cp-detail-title">
+                    <h2>Infosys InfyTQ / Specialist Programmer</h2>
+                    <p>InfyTQ certification + campus drives. Separate tracks for SP (higher CTC) and Systems Engineer.</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,124,195,0.12);color:#007CC3;">i</span> Overview</h3>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                    <p>Infosys hires through multiple tracks: <strong>Systems Engineer (SE)</strong> at 3.6 LPA, <strong>Specialist Programmer (SP)</strong> at 6.5 LPA, and <strong>Digital Specialist Engineer (DSE)</strong> at 9.5 LPA. InfyTQ is a free certification platform — high performers get direct interview calls.</p>
+                    <p style="margin-top:8px;"><strong>Eligibility:</strong> 60% in 10th, 12th, and UG. No standing arrears. BE/BTech from recognized universities.</p>
+                    <p style="margin-top:8px;"><strong>Process:</strong> Online Test &rarr; InfyTQ Score &rarr; Technical Interview &rarr; HR Interview</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,124,195,0.12);color:#007CC3;">P</span> Exam Pattern</h3>
+                <table class="cp-pattern-table">
+                    <thead>
+                        <tr><th>Section</th><th>Questions</th><th>Duration</th><th>Key Topics</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Quantitative Aptitude</strong></td>
+                            <td>15</td>
+                            <td>25 min</td>
+                            <td>Profit & Loss, Time & Work, Averages, Ratios, Number Series</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Logical Reasoning</strong></td>
+                            <td>15</td>
+                            <td>25 min</td>
+                            <td>Data Sufficiency, Arrangements, Puzzles, Sequences</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Verbal Ability</strong></td>
+                            <td>20</td>
+                            <td>20 min</td>
+                            <td>RC, Error Spotting, Sentence Completion, Vocabulary</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Programming (MCQ)</strong></td>
+                            <td>10</td>
+                            <td>20 min</td>
+                            <td>OOPs, Data Structures, DBMS, OS fundamentals</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Puzzle Solving / Coding</strong></td>
+                            <td>3-5</td>
+                            <td>60 min</td>
+                            <td>Hands-on coding (Arrays, Strings, Patterns), Puzzles for SP track</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;font-size:12px;color:var(--text-muted);padding:10px;background:var(--bg-surface);border-radius:var(--radius-md);">
+                    <strong>SP Track:</strong> The Specialist Programmer test has additional advanced DSA and system design MCQs. Coding round requires solving 3 problems in 60 minutes.
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,124,195,0.12);color:#007CC3;">S</span> Preparation Strategy</h3>
+                <ul class="cp-strategy-list">
+                    <li><span class="cp-strategy-num" style="background:#007CC3;">1</span> Complete the free InfyTQ certification courses on their platform — it directly impacts your shortlisting chances.</li>
+                    <li><span class="cp-strategy-num" style="background:#007CC3;">2</span> Infosys Aptitude is moderate. Focus on Time-Speed-Distance, Profit-Loss, and Number Series patterns.</li>
+                    <li><span class="cp-strategy-num" style="background:#007CC3;">3</span> For the SP track, practice medium-level coding on arrays, strings, and recursion. Python is preferred.</li>
+                    <li><span class="cp-strategy-num" style="background:#007CC3;">4</span> Puzzle questions are unique to Infosys — practice logical puzzles involving arrangements, scheduling, and optimization.</li>
+                    <li><span class="cp-strategy-num" style="background:#007CC3;">5</span> Revise DBMS (SQL queries, normalization) and OS (scheduling, deadlocks) for technical MCQs.</li>
+                </ul>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,124,195,0.12);color:#007CC3;">Q</span> Previous Year Sample Questions</h3>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Quantitative <span class="cp-sample-q-type" style="background:rgba(0,124,195,0.1);color:#007CC3;">Number Series</span></div>
+                    Find the next number in the series: 2, 6, 14, 30, 62, ?
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Logical Reasoning <span class="cp-sample-q-type" style="background:rgba(0,124,195,0.1);color:#007CC3;">Puzzle</span></div>
+                    Five friends — A, B, C, D, E — sit in a row. A sits next to B but not next to C. D sits at one of the ends. E is not adjacent to D. Who sits in the middle?
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Programming <span class="cp-sample-q-type" style="background:rgba(0,124,195,0.1);color:#007CC3;">DBMS</span></div>
+                    Which normal form deals with the removal of transitive dependency?
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ──────────────────────────────────────────
+             WIPRO
+             ────────────────────────────────────────── -->
+        <div class="cp-detail" id="cp-tab-wipro">
+            <div class="cp-detail-header">
+                <div class="cp-detail-logo" style="background:#44156B;">W</div>
+                <div class="cp-detail-title">
+                    <h2>Wipro NLTH / Elite National Talent Hunt</h2>
+                    <p>Mass hiring through NLTH and Project Engineer roles. Separate Elite track for higher packages.</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(68,21,107,0.12);color:#44156B;">i</span> Overview</h3>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                    <p>Wipro hires through <strong>NLTH (National Level Talent Hunt)</strong> for Project Engineer roles at 3.5 LPA, and <strong>Elite</strong> track at 6.5 LPA for top performers. The Turbo track offers up to 6.5 LPA with additional technical assessment.</p>
+                    <p style="margin-top:8px;"><strong>Eligibility:</strong> 60% in 10th, 12th, and UG. No active backlogs at the time of joining.</p>
+                    <p style="margin-top:8px;"><strong>Process:</strong> Online Aptitude &rarr; Written Communication &rarr; Technical Interview &rarr; HR Round</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(68,21,107,0.12);color:#44156B;">P</span> Exam Pattern</h3>
+                <table class="cp-pattern-table">
+                    <thead>
+                        <tr><th>Section</th><th>Questions</th><th>Duration</th><th>Key Topics</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Aptitude (Quant + Logical)</strong></td>
+                            <td>60</td>
+                            <td>60 min</td>
+                            <td>Quant: Percentages, Averages, DI; Logical: Series, Analogies, Blood Relations</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Written Communication</strong></td>
+                            <td>1 Essay</td>
+                            <td>20 min</td>
+                            <td>Essay on given topic (200-300 words). Grammar, coherence, and structure matter.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical (for Turbo/Elite)</strong></td>
+                            <td>20</td>
+                            <td>20 min</td>
+                            <td>C/Java basics, DBMS, Networking, OS concepts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Coding (Turbo/Elite only)</strong></td>
+                            <td>2</td>
+                            <td>30 min</td>
+                            <td>Simple-medium coding: Strings, Arrays, Sorting, Number manipulation</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;font-size:12px;color:var(--text-muted);padding:10px;background:var(--bg-surface);border-radius:var(--radius-md);">
+                    <strong>Important:</strong> The written communication test carries significant weight. Poor essays lead to rejection even with good aptitude scores.
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(68,21,107,0.12);color:#44156B;">S</span> Preparation Strategy</h3>
+                <ul class="cp-strategy-list">
+                    <li><span class="cp-strategy-num" style="background:#44156B;">1</span> Wipro Aptitude is relatively easier. Focus on speed — 60 questions in 60 minutes means 1 minute per question.</li>
+                    <li><span class="cp-strategy-num" style="background:#44156B;">2</span> Practice essay writing daily. Common topics: technology impact, education, environment, current affairs. Keep it structured: intro, 2-3 body paragraphs, conclusion.</li>
+                    <li><span class="cp-strategy-num" style="background:#44156B;">3</span> For Turbo/Elite, revise Java or C basics — inheritance, polymorphism, exception handling. These are commonly asked.</li>
+                    <li><span class="cp-strategy-num" style="background:#44156B;">4</span> Coding problems are easy-medium. Practice 20-30 problems from arrays and strings on any competitive coding platform.</li>
+                    <li><span class="cp-strategy-num" style="background:#44156B;">5</span> In the interview round, be prepared to explain your resume projects in detail. Wipro values communication skills heavily.</li>
+                </ul>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(68,21,107,0.12);color:#44156B;">Q</span> Previous Year Sample Questions</h3>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Aptitude <span class="cp-sample-q-type" style="background:rgba(68,21,107,0.1);color:#44156B;">Percentage</span></div>
+                    A shopkeeper marks his goods 30% above cost price but allows a discount of 10%. Find his gain percentage.
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Logical <span class="cp-sample-q-type" style="background:rgba(68,21,107,0.1);color:#44156B;">Series</span></div>
+                    Find the missing number: 3, 7, 15, 31, 63, ?
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Written <span class="cp-sample-q-type" style="background:rgba(68,21,107,0.1);color:#44156B;">Essay</span></div>
+                    Write an essay on "The role of artificial intelligence in transforming education in India" (200-300 words).
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ──────────────────────────────────────────
+             ACCENTURE
+             ────────────────────────────────────────── -->
+        <div class="cp-detail" id="cp-tab-accenture">
+            <div class="cp-detail-header">
+                <div class="cp-detail-logo" style="background:#A100FF;">A</div>
+                <div class="cp-detail-title">
+                    <h2>Accenture Recruitment Assessment</h2>
+                    <p>Three-section online assessment for ASE roles. Separate advanced coding for higher packages.</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(161,0,255,0.12);color:#A100FF;">i</span> Overview</h3>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                    <p>Accenture hires for <strong>Associate Software Engineer (ASE)</strong> at 4.5 LPA and <strong>Packaged App Development (PAD)</strong> roles at 6.5 LPA. The assessment has three clear sections with no negative marking.</p>
+                    <p style="margin-top:8px;"><strong>Eligibility:</strong> 60% in 10th and 12th, 65% in UG. No active backlogs. Maximum 1 year gap in education.</p>
+                    <p style="margin-top:8px;"><strong>Process:</strong> Online Assessment &rarr; Coding Round (for higher roles) &rarr; Communication Assessment &rarr; HR Interview</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(161,0,255,0.12);color:#A100FF;">P</span> Exam Pattern</h3>
+                <table class="cp-pattern-table">
+                    <thead>
+                        <tr><th>Section</th><th>Questions</th><th>Duration</th><th>Key Topics</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Cognitive (English + Aptitude + Reasoning)</strong></td>
+                            <td>50</td>
+                            <td>50 min</td>
+                            <td>Verbal Ability, Abstract Reasoning, Numerical Ability, Letter/Number Series</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Assessment</strong></td>
+                            <td>40</td>
+                            <td>40 min</td>
+                            <td>C/C++, Java, DBMS, Networking, Cloud basics, OS, Pseudocode</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Coding</strong></td>
+                            <td>2</td>
+                            <td>45 min</td>
+                            <td>DSA problems — Arrays, Strings, Sorting, Searching. One easy + one medium.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;font-size:12px;color:var(--text-muted);padding:10px;background:var(--bg-surface);border-radius:var(--radius-md);">
+                    <strong>Scoring:</strong> No negative marking. Cognitive and Technical are MCQ-based. Coding is evaluated on test case pass rate and code quality.
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(161,0,255,0.12);color:#A100FF;">S</span> Preparation Strategy</h3>
+                <ul class="cp-strategy-list">
+                    <li><span class="cp-strategy-num" style="background:#A100FF;">1</span> Cognitive section is very fast-paced (1 min/question). Practice abstract reasoning and number series for speed.</li>
+                    <li><span class="cp-strategy-num" style="background:#A100FF;">2</span> Technical section covers breadth, not depth. Revise basics of C, Java (OOPs), DBMS (SQL), and Networking (OSI layers, protocols).</li>
+                    <li><span class="cp-strategy-num" style="background:#A100FF;">3</span> Accenture coding problems are typically easy-medium. Focus on string manipulation, array operations, and basic sorting.</li>
+                    <li><span class="cp-strategy-num" style="background:#A100FF;">4</span> The communication assessment tests spoken English — practice clear, structured responses to common behavioral questions.</li>
+                    <li><span class="cp-strategy-num" style="background:#A100FF;">5</span> Accenture values cloud and emerging tech knowledge. Briefly study AWS/Azure basics and AI/ML concepts for the interview.</li>
+                </ul>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(161,0,255,0.12);color:#A100FF;">Q</span> Previous Year Sample Questions</h3>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Cognitive <span class="cp-sample-q-type" style="background:rgba(161,0,255,0.1);color:#A100FF;">Abstract</span></div>
+                    Identify the pattern: Each shape in the sequence rotates 45 degrees clockwise and alternates between filled and empty. What comes next?
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Technical <span class="cp-sample-q-type" style="background:rgba(161,0,255,0.1);color:#A100FF;">DBMS</span></div>
+                    Which SQL clause is used to filter records after a GROUP BY aggregation?
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Coding <span class="cp-sample-q-type" style="background:rgba(161,0,255,0.1);color:#A100FF;">Arrays</span></div>
+                    Given an array of integers, find the contiguous subarray with the maximum sum. Return the sum. (Kadane's Algorithm)
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ──────────────────────────────────────────
+             AMAZON
+             ────────────────────────────────────────── -->
+        <div class="cp-detail" id="cp-tab-amazon">
+            <div class="cp-detail-header">
+                <div class="cp-detail-logo" style="background:#FF9900;">A</div>
+                <div class="cp-detail-title">
+                    <h2>Amazon SDE Hiring</h2>
+                    <p>Highly competitive campus hiring for SDE-1 roles. Strong focus on DSA and Leadership Principles.</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(255,153,0,0.12);color:#E68900;">i</span> Overview</h3>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                    <p>Amazon hires SDE-1 from top colleges with packages ranging from <strong>12-32 LPA</strong> (base + RSU + joining bonus). The hiring process is rigorous and focuses heavily on data structures, algorithms, and Amazon's 16 Leadership Principles.</p>
+                    <p style="margin-top:8px;"><strong>Eligibility:</strong> CGPA 7.0+ (varies by college). CSE/IT branches preferred. Some drives are open to all branches.</p>
+                    <p style="margin-top:8px;"><strong>Process:</strong> Online Assessment (OA) &rarr; Technical Interview 1 (DSA) &rarr; Technical Interview 2 (DSA + System Design) &rarr; Behavioral (LP) Round &rarr; Bar Raiser (optional)</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(255,153,0,0.12);color:#E68900;">P</span> Exam Pattern</h3>
+                <table class="cp-pattern-table">
+                    <thead>
+                        <tr><th>Round</th><th>Format</th><th>Duration</th><th>Key Areas</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Online Assessment (OA)</strong></td>
+                            <td>2-3 Coding + MCQs</td>
+                            <td>90 min</td>
+                            <td>Arrays, Trees, Graphs, DP, Greedy. MCQs on CS fundamentals.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Round 1</strong></td>
+                            <td>1-2 Coding + Discussion</td>
+                            <td>60 min</td>
+                            <td>Medium-Hard DSA: Trees, Graphs, DP, Linked Lists. Explain approach clearly.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Round 2</strong></td>
+                            <td>1-2 Coding + Design</td>
+                            <td>60 min</td>
+                            <td>Hard DSA + Low-Level Design (LLD). Class design, OOPs, scalability basics.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Behavioral / LP Round</strong></td>
+                            <td>STAR-format questions</td>
+                            <td>45 min</td>
+                            <td>Amazon Leadership Principles. "Tell me about a time when..." format.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;font-size:12px;color:var(--text-muted);padding:10px;background:var(--bg-surface);border-radius:var(--radius-md);">
+                    <strong>LP Focus:</strong> Customer Obsession, Ownership, Invent & Simplify, Bias for Action, Dive Deep, Deliver Results are the most frequently tested principles.
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(255,153,0,0.12);color:#E68900;">S</span> Preparation Strategy</h3>
+                <ul class="cp-strategy-list">
+                    <li><span class="cp-strategy-num" style="background:#FF9900;">1</span> Solve 200+ LeetCode problems. Focus on: Arrays, Trees, Graphs, DP, Sliding Window, Two Pointers. Amazon repeats patterns.</li>
+                    <li><span class="cp-strategy-num" style="background:#FF9900;">2</span> Master BFS/DFS on trees and graphs — at least 30-40 problems. Amazon loves graph traversal problems.</li>
+                    <li><span class="cp-strategy-num" style="background:#FF9900;">3</span> Practice explaining your approach out loud while coding. Amazon interviewers evaluate communication as much as correctness.</li>
+                    <li><span class="cp-strategy-num" style="background:#FF9900;">4</span> Prepare 8-10 STAR stories mapping to Amazon LPs. Each story should cover: Situation, Task, Action, Result with metrics.</li>
+                    <li><span class="cp-strategy-num" style="background:#FF9900;">5</span> For the OA, solve under timed conditions. Focus on getting optimal solutions — brute force may not pass all test cases.</li>
+                    <li><span class="cp-strategy-num" style="background:#FF9900;">6</span> Study basic system design: URL shortener, parking lot, LRU cache, notification system. Amazon tests LLD at SDE-1 level.</li>
+                </ul>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(255,153,0,0.12);color:#E68900;">Q</span> Previous Year Sample Questions</h3>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">OA Coding <span class="cp-sample-q-type" style="background:rgba(255,153,0,0.1);color:#E68900;">Graphs</span></div>
+                    Given a grid of 0s and 1s, find the number of distinct islands. Two islands are distinct if their shapes are different. (BFS/DFS + shape hashing)
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Technical Round <span class="cp-sample-q-type" style="background:rgba(255,153,0,0.1);color:#E68900;">Trees</span></div>
+                    Given a binary tree, return the vertical order traversal of its nodes' values. Handle nodes at the same position by sorting them.
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Behavioral <span class="cp-sample-q-type" style="background:rgba(255,153,0,0.1);color:#E68900;">Leadership</span></div>
+                    Tell me about a time you had to make a decision with incomplete information. What was the outcome? (Tests: Bias for Action, Deliver Results)
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ──────────────────────────────────────────
+             MICROSOFT
+             ────────────────────────────────────────── -->
+        <div class="cp-detail" id="cp-tab-microsoft">
+            <div class="cp-detail-header">
+                <div class="cp-detail-logo" style="background:#00A4EF;">M</div>
+                <div class="cp-detail-title">
+                    <h2>Microsoft SDE / SWE Hiring</h2>
+                    <p>Premium campus hiring with focus on problem-solving, coding, and design thinking. Group Fly + interviews.</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,164,239,0.12);color:#00A4EF;">i</span> Overview</h3>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                    <p>Microsoft hires SDE/SWE from top IITs, NITs, and IIIT-H with packages ranging from <strong>15-42 LPA</strong> (base + stocks). The process includes a unique "Group Fly" round — a pen-and-paper coding test in groups before interviews.</p>
+                    <p style="margin-top:8px;"><strong>Eligibility:</strong> CGPA 7.0+ (varies by college). Open to CSE, IT, ECE, EEE branches typically.</p>
+                    <p style="margin-top:8px;"><strong>Process:</strong> Online Assessment &rarr; Group Fly Round &rarr; Technical Interview 1 &rarr; Technical Interview 2 &rarr; AA (As Appropriate) / Hiring Manager Round</p>
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,164,239,0.12);color:#00A4EF;">P</span> Exam Pattern</h3>
+                <table class="cp-pattern-table">
+                    <thead>
+                        <tr><th>Round</th><th>Format</th><th>Duration</th><th>Key Areas</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Online Assessment</strong></td>
+                            <td>3 Coding Problems</td>
+                            <td>75 min</td>
+                            <td>Arrays, Strings, Trees, Graphs, DP. Difficulty: 1 Easy + 1 Medium + 1 Hard.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Group Fly</strong></td>
+                            <td>2-3 Problems (Pen & Paper)</td>
+                            <td>60 min</td>
+                            <td>Write code on paper. Clean code, correct logic, and edge case handling matter.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Interview 1</strong></td>
+                            <td>1-2 DSA Problems</td>
+                            <td>60 min</td>
+                            <td>Trees, Linked Lists, Dynamic Programming. Focus on optimal solutions.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Technical Interview 2</strong></td>
+                            <td>1 DSA + Design</td>
+                            <td>60 min</td>
+                            <td>Complex DSA + LLD. Design a data structure, implement a cache, etc.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AA / Hiring Manager</strong></td>
+                            <td>Behavioral + Technical</td>
+                            <td>45 min</td>
+                            <td>Culture fit, past projects, growth mindset, collaboration. Some DSA possible.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;font-size:12px;color:var(--text-muted);padding:10px;background:var(--bg-surface);border-radius:var(--radius-md);">
+                    <strong>Group Fly:</strong> This is unique to Microsoft. You write code on paper without IDE support. Practice writing clean, syntactically correct code without autocomplete.
+                </div>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,164,239,0.12);color:#00A4EF;">S</span> Preparation Strategy</h3>
+                <ul class="cp-strategy-list">
+                    <li><span class="cp-strategy-num" style="background:#00A4EF;">1</span> Solve 250+ LeetCode problems. Microsoft favors Trees, Graphs, and DP heavily. Focus on medium-hard difficulty.</li>
+                    <li><span class="cp-strategy-num" style="background:#00A4EF;">2</span> For Group Fly, practice writing complete code on paper — including edge cases and proper syntax. No IDE means no autocomplete.</li>
+                    <li><span class="cp-strategy-num" style="background:#00A4EF;">3</span> Microsoft interviewers expect you to discuss multiple approaches before coding. Always start with brute force, then optimize.</li>
+                    <li><span class="cp-strategy-num" style="background:#00A4EF;">4</span> Study LLD thoroughly: design patterns (Singleton, Factory, Observer), SOLID principles, and class diagram design.</li>
+                    <li><span class="cp-strategy-num" style="background:#00A4EF;">5</span> Microsoft values "growth mindset" — be ready to discuss how you learn from failures and adapt. Prepare 3-4 such stories.</li>
+                    <li><span class="cp-strategy-num" style="background:#00A4EF;">6</span> Revise bit manipulation and math-based problems. Microsoft OA often includes one clever math/bit problem.</li>
+                </ul>
+            </div>
+
+            <div class="cp-section">
+                <h3><span class="cp-section-icon" style="background:rgba(0,164,239,0.12);color:#00A4EF;">Q</span> Previous Year Sample Questions</h3>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Online Assessment <span class="cp-sample-q-type" style="background:rgba(0,164,239,0.1);color:#00A4EF;">DP</span></div>
+                    Given a string, find the length of the longest palindromic subsequence. Return the minimum number of insertions to make the string a palindrome.
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Group Fly <span class="cp-sample-q-type" style="background:rgba(0,164,239,0.1);color:#00A4EF;">Trees</span></div>
+                    Given a binary search tree and two nodes, find the lowest common ancestor (LCA). Write complete code on paper with edge case handling.
+                </div>
+                <div class="cp-sample-q">
+                    <div class="cp-sample-q-label">Technical Interview <span class="cp-sample-q-type" style="background:rgba(0,164,239,0.1);color:#00A4EF;">Design</span></div>
+                    Design an LRU Cache that supports get(key) and put(key, value) operations in O(1) time complexity. Discuss your choice of data structures.
+                </div>
+            </div>
+
+        </div>
+
+    </div><!-- end cp-panel-detailed -->
+
+
+    <!-- ═══════════════════════════════════════════
+         VIEW: HIRING TIMELINE
+         ═══════════════════════════════════════════ -->
+    <div id="cp-panel-timeline" style="display:none;">
+        <div class="cp-section">
+            <h3 style="margin-bottom:20px;"><span class="cp-section-icon" style="background:var(--cobalt-muted);color:var(--accent);">T</span> Month-wise Hiring Timeline</h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">Typical campus recruitment windows for Indian engineering colleges. Exact dates vary by college tier.</p>
+
+            {% set months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}
+            {% set timeline_data = [
+                {"name": "TCS", "color": "#2B3990", "active": [0,0,0,0,0,0,0,1,1,1,0,0]},
+                {"name": "Infosys", "color": "#007CC3", "active": [0,0,0,0,0,0,0,0,1,1,1,0]},
+                {"name": "Wipro", "color": "#44156B", "active": [0,0,0,0,0,0,0,1,1,1,0,0]},
+                {"name": "Accenture", "color": "#A100FF", "active": [0,0,0,0,0,0,0,0,1,1,1,1]},
+                {"name": "Amazon", "color": "#FF9900", "active": [0,0,0,0,0,0,1,1,1,0,0,0]},
+                {"name": "Microsoft", "color": "#00A4EF", "active": [0,0,0,0,0,0,0,1,1,1,0,0]}
+            ] %}
+
+            <!-- Month headers -->
+            <div class="cp-timeline">
+                {% for m in months %}
+                <div class="cp-timeline-month">{{ m }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Timeline bars per company -->
+            {% for company in timeline_data %}
+            <div style="margin-bottom:4px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <span class="cp-timeline-label-dot" style="background:{{ company.color }};"></span>
+                    <span style="font-size:12px;font-weight:600;color:var(--text-primary);">{{ company.name }}</span>
+                </div>
+                <div class="cp-timeline" style="margin-bottom:8px;">
+                    {% for active in company.active %}
+                    <div class="cp-timeline-bar {{ 'active' if active else '' }}" style="background:{{ company.color }};"></div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div style="margin-top:20px;padding:14px;background:var(--bg-surface);border-radius:var(--radius-md);font-size:12px;color:var(--text-secondary);line-height:1.6;">
+                <strong>Key Notes:</strong>
+                <ul style="margin:6px 0 0 16px;padding:0;">
+                    <li><strong>Amazon and Microsoft</strong> hire early (July-September) at top-tier colleges (IITs, NITs, IIITs).</li>
+                    <li><strong>TCS, Infosys, Wipro</strong> conduct mass drives from August through November across all tiers.</li>
+                    <li><strong>Accenture</strong> has an extended window and may hire through December-January for some batches.</li>
+                    <li>Off-campus drives for service companies may continue through January-March.</li>
+                    <li>Preparation should ideally begin 3-4 months before your college's placement season starts.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════
+         VIEW: COMPARISON TABLE
+         ═══════════════════════════════════════════ -->
+    <div id="cp-panel-compare" style="display:none;">
+        <div class="cp-section" style="padding:0;overflow:hidden;">
+            <div style="padding:20px 24px 0;">
+                <h3 style="margin-bottom:4px;"><span class="cp-section-icon" style="background:var(--cobalt-muted);color:var(--accent);">C</span> Side-by-Side Comparison</h3>
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">All six companies compared across key parameters to help you prioritize preparation.</p>
+            </div>
+            <div class="cp-compare-wrap" style="border:none;border-radius:0;">
+                <table class="cp-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Exam Name</th>
+                            <th>Difficulty</th>
+                            <th>Package (LPA)</th>
+                            <th>Sections</th>
+                            <th>Duration</th>
+                            <th>Negative Marking</th>
+                            <th>Hiring Window</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="cp-compare-company-cell">
+                                    <span class="cp-compare-logo" style="background:#2B3990;">T</span> TCS
+                                </div>
+                            </td>
+                            <td>NQT</td>
+                            <td><span class="cp-difficulty cp-diff-moderate">Moderate</span></td>
+                            <td>3.36 - 7</td>
+                            <td>Verbal, Quant, Reasoning, Programming</td>
+                            <td>150 min</td>
+                            <td>No</td>
+                            <td>Aug - Oct</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="cp-compare-company-cell">
+                                    <span class="cp-compare-logo" style="background:#007CC3;">I</span> Infosys
+                                </div>
+                            </td>
+                            <td>InfyTQ / SP</td>
+                            <td><span class="cp-difficulty cp-diff-moderate">Moderate</span></td>
+                            <td>3.6 - 9.5</td>
+                            <td>Aptitude, Logical, Verbal, Programming, Puzzle</td>
+                            <td>150 min</td>
+                            <td>No</td>
+                            <td>Sep - Nov</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="cp-compare-company-cell">
+                                    <span class="cp-compare-logo" style="background:#44156B;">W</span> Wipro
+                                </div>
+                            </td>
+                            <td>NLTH / Elite</td>
+                            <td><span class="cp-difficulty cp-diff-easy">Easy-Moderate</span></td>
+                            <td>3.5 - 6.5</td>
+                            <td>Aptitude, Written, Technical</td>
+                            <td>110 min</td>
+                            <td>No</td>
+                            <td>Aug - Oct</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="cp-compare-company-cell">
+                                    <span class="cp-compare-logo" style="background:#A100FF;">A</span> Accenture
+                                </div>
+                            </td>
+                            <td>Recruitment</td>
+                            <td><span class="cp-difficulty cp-diff-moderate">Moderate</span></td>
+                            <td>4.5 - 6.5</td>
+                            <td>Cognitive, Technical, Coding</td>
+                            <td>135 min</td>
+                            <td>No</td>
+                            <td>Sep - Dec</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="cp-compare-company-cell">
+                                    <span class="cp-compare-logo" style="background:#FF9900;">A</span> Amazon
+                                </div>
+                            </td>
+                            <td>SDE OA</td>
+                            <td><span class="cp-difficulty cp-diff-hard">Hard</span></td>
+                            <td>12 - 32</td>
+                            <td>OA, Technical (x2), Behavioral/LP</td>
+                            <td>90 min (OA)</td>
+                            <td>No</td>
+                            <td>Jul - Sep</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="cp-compare-company-cell">
+                                    <span class="cp-compare-logo" style="background:#00A4EF;">M</span> Microsoft
+                                </div>
+                            </td>
+                            <td>SDE Hiring</td>
+                            <td><span class="cp-difficulty cp-diff-hard">Hard</span></td>
+                            <td>15 - 42</td>
+                            <td>OA, Group Fly, Technical (x2), AA</td>
+                            <td>75 min (OA)</td>
+                            <td>No</td>
+                            <td>Aug - Oct</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Additional comparison: Skills Required -->
+        <div class="cp-section" style="margin-top:20px;">
+            <h3><span class="cp-section-icon" style="background:var(--cobalt-muted);color:var(--accent);">S</span> Skills Priority by Company</h3>
+            <div class="cp-compare-wrap" style="border:none;">
+                <table class="cp-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Skill</th>
+                            <th style="text-align:center;">TCS</th>
+                            <th style="text-align:center;">Infosys</th>
+                            <th style="text-align:center;">Wipro</th>
+                            <th style="text-align:center;">Accenture</th>
+                            <th style="text-align:center;">Amazon</th>
+                            <th style="text-align:center;">Microsoft</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set skills_matrix = [
+                            {"skill": "Aptitude / Quant", "vals": ["High","High","High","High","Low","Low"]},
+                            {"skill": "Verbal / English", "vals": ["High","Medium","High","Medium","Low","Low"]},
+                            {"skill": "Logical Reasoning", "vals": ["High","High","Medium","High","Low","Low"]},
+                            {"skill": "Basic Coding", "vals": ["Medium","Medium","Medium","Medium","Low","Low"]},
+                            {"skill": "DSA (Medium-Hard)", "vals": ["Low","Low","Low","Low","Critical","Critical"]},
+                            {"skill": "System Design", "vals": ["None","None","None","None","Medium","High"]},
+                            {"skill": "CS Fundamentals", "vals": ["Low","Medium","Medium","Medium","Medium","Medium"]},
+                            {"skill": "Behavioral / STAR", "vals": ["Low","Low","Medium","Medium","Critical","High"]}
+                        ] %}
+                        {% for row in skills_matrix %}
+                        <tr>
+                            <td><strong>{{ row.skill }}</strong></td>
+                            {% for val in row.vals %}
+                            <td style="text-align:center;">
+                                {% if val == "Critical" %}
+                                    <span style="color:#DC2626;font-weight:700;font-size:11px;">{{ val }}</span>
+                                {% elif val == "High" %}
+                                    <span style="color:#D97706;font-weight:600;font-size:11px;">{{ val }}</span>
+                                {% elif val == "Medium" %}
+                                    <span style="color:var(--accent);font-size:11px;">{{ val }}</span>
+                                {% elif val == "Low" %}
+                                    <span style="color:var(--text-muted);font-size:11px;">{{ val }}</span>
+                                {% else %}
+                                    <span style="color:var(--text-muted);font-size:11px;opacity:0.5;">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recommended Preparation Order -->
+        <div class="cp-section" style="margin-top:20px;">
+            <h3><span class="cp-section-icon" style="background:var(--cobalt-muted);color:var(--accent);">R</span> Recommended Preparation Order</h3>
+            <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                <p>If you are targeting multiple companies, this is the optimal preparation sequence to maximize overlap:</p>
+                <ol style="margin:12px 0 0 18px;padding:0;display:flex;flex-direction:column;gap:10px;">
+                    <li><strong>Phase 1 (Months 1-2):</strong> Aptitude + Verbal + Reasoning — covers TCS, Infosys, Wipro, Accenture. This is your safety net.</li>
+                    <li><strong>Phase 2 (Months 2-3):</strong> Basic Programming + CS Fundamentals (DBMS, OS, Networking) — needed for all company tech rounds.</li>
+                    <li><strong>Phase 3 (Months 3-5):</strong> DSA (Medium-Hard) — covers Amazon, Microsoft, and gives you an edge in Infosys SP / Accenture PAD.</li>
+                    <li><strong>Phase 4 (Month 5+):</strong> System Design + Behavioral Prep — final layer for product companies. Start STAR stories early.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end container -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+    /* ── View Switching ── */
+    var views = ['overview','detailed','timeline','compare'];
+
+    window.cpSetView = function(view) {
+        views.forEach(function(v) {
+            var panel = document.getElementById('cp-panel-' + v);
+            var btn   = document.getElementById('cp-view-' + v);
+            if (panel) panel.style.display = (v === view) ? 'block' : 'none';
+            if (btn)   btn.classList.toggle('active', v === view);
+        });
+    };
+
+    /* ── Company Tab Switching ── */
+    var companies = ['tcs','infosys','wipro','accenture','amazon','microsoft'];
+
+    window.cpSwitchTab = function(company) {
+        companies.forEach(function(c) {
+            var tab   = document.getElementById('cp-tab-' + c);
+            if (tab) tab.classList.toggle('active', c === company);
+        });
+        // Update pills
+        var pills = document.querySelectorAll('#cp-company-tabs .cp-tab');
+        pills.forEach(function(pill) {
+            var isTarget = pill.getAttribute('onclick').indexOf("'" + company + "'") !== -1;
+            pill.classList.toggle('active', isTarget);
+        });
+    };
+
+    /* ── Card click → switch to detailed view and select company ── */
+    window.cpShowCompany = function(company) {
+        cpSetView('detailed');
+        cpSwitchTab(company);
+        // Scroll to top of detailed section
+        var panel = document.getElementById('cp-panel-detailed');
+        if (panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
+    };
+})();
+</script>
+{% endblock %}
