@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+# Install curl for healthcheck and git for pip installs
+RUN apt-get update && apt-get install -y --no-install-recommends curl git && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user (required by HF Spaces)
@@ -23,6 +23,12 @@ USER user
 
 # HF Spaces persistent storage volume
 VOLUME /data
+
+# Environment variables for OpenEnv scaling
+ENV WORKERS=2
+ENV MAX_CONCURRENT_ENVS=100
+ENV PORT=7860
+ENV HOST=0.0.0.0
 
 EXPOSE 7860
 

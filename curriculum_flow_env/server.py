@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -2274,6 +2274,68 @@ async def get_spec():
     if spec_path.exists():
         return json.loads(spec_path.read_text())
     return {"error": "spec not found"}
+
+
+# """ OPENENV WEBSOCKET ENDPOINT """
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """OpenEnv WebSocket endpoint — each connection gets an isolated env instance."""
+    from curriculum_flow_env.env import CurriculumFlowEnv
+
+    await websocket.accept()
+    ws_env = CurriculumFlowEnv(archetype="steady", max_steps=200)
+    logger.info("WebSocket session opened")
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+            msg_type = data.get("type", "")
+
+            if msg_type == "reset":
+                seed = data.get("seed")
+                archetype = data.get("archetype")
+                options = {"archetype": archetype} if archetype else None
+                obs, info = ws_env.reset(seed=seed, options=options)
+                await websocket.send_json({
+                    "type": "reset",
+                    "observation": obs_to_json(obs),
+                    "info": info,
+                })
+
+            elif msg_type == "step":
+                action = data.get("action", {})
+                obs, reward, terminated, truncated, info = ws_env.step(action)
+                await websocket.send_json({
+                    "type": "step",
+                    "observation": obs_to_json(obs),
+                    "reward": float(reward),
+                    "terminated": terminated,
+                    "truncated": truncated,
+                    "done": terminated or truncated,
+                    "info": info,
+                })
+
+            elif msg_type == "state":
+                await websocket.send_json({
+                    "type": "state",
+                    "state": ws_env.state(),
+                })
+
+            else:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": f"Unknown message type: {msg_type}",
+                })
+
+    except WebSocketDisconnect:
+        logger.info("WebSocket session closed")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 
 # """ OPENENV-POWERED RECOMMENDATION ENDPOINTS """
