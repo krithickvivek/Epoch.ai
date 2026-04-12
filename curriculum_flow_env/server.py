@@ -2370,16 +2370,31 @@ async def api_reset(req: ResetRequest = None):
 async def api_step(req: ActionRequest):
     async with env_lock:
         obs, reward, terminated, truncated, info = env.step(req.action)
+        obs_json = obs_to_json(obs)
+        done = terminated or truncated
         return {
-            "observation": obs_to_json(obs), "reward": reward,
-            "terminated": terminated, "truncated": truncated, "info": info,
+            "observation": f"Step {info.get('step', 0)}: topic={info.get('topic_name', 'unknown')}, "
+                           f"difficulty={info.get('difficulty', 0)}, reward={float(reward):.4f}, "
+                           f"mastered={info.get('topics_mastered', 0)}/{NUM_TOPICS}, "
+                           f"engagement={float(obs_json.get('engagement', [0.0])[0]):.2f}.",
+            "reward": float(reward),
+            "done": done,
+            "info": info,
         }
 
 @app.get("/api/state")
 @app.get("/state")
 async def api_state():
     async with env_lock:
-        return {"state": env.state()}
+        state = env.state()
+        return {
+            "observation": f"State: step {state.get('step', 0)}, "
+                           f"mastered {state.get('topics_mastered', 0)}/{NUM_TOPICS}, "
+                           f"completion {state.get('completion_rate', 0.0):.2f}.",
+            "reward": 0.0,
+            "done": False,
+            "info": state,
+        }
 
 @app.get("/health")
 async def health():

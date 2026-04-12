@@ -33,6 +33,11 @@ STDOUT FORMAT
     - error is the raw last_action_error string, or null if none.
     - All fields on a single line with no newlines within a line.
     - Each tasks should return score in [0, 1]
+
+TASKS (3 graded tasks):
+    1. topic_selection     - Optimize which topics to study for maximum mastery gain
+    2. difficulty_adaptation - Optimize difficulty levels for optimal engagement
+    3. assessment_timing    - Optimize assessment timing for best completion rate
 """
 
 import asyncio
@@ -46,7 +51,7 @@ from openai import OpenAI
 from client import CurriculumEnv
 from models import CurriculumAction, CurriculumObservation
 
-# ── Environment configuration ────────────────────────────────────────────────
+# -- Environment configuration ------------------------------------------------
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 
@@ -54,40 +59,14 @@ API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-TASK_NAME = os.getenv("CURRICULUM_TASK", "adaptive_curriculum")
-BENCHMARK = os.getenv("CURRICULUM_BENCHMARK", "curriculum_flow_env")
-MAX_STEPS = 50
+BENCHMARK = "curriculum_flow_env"
+STEPS_PER_TASK = 30  # 3 tasks x 30 steps = ~90 steps total, well under 20min
 TEMPERATURE = 0.7
 MAX_TOKENS = 256
-
-# ── Scoring ──────────────────────────────────────────────────────────────────
-# Score is completion_rate (0.0 to 1.0) — fraction of curriculum mastered
-SUCCESS_SCORE_THRESHOLD = 0.05
-
-# ── Prompts ──────────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = textwrap.dedent("""\
-You are an AI tutor optimizing a student's learning path through a placement
-preparation curriculum. Each turn you choose which topic to study, the difficulty
-level, and whether to test the student.
-
-The environment has 66 topics across categories: Quantitative Aptitude, Logical
-Reasoning, Verbal Ability, Data Interpretation, Programming & CS, DSA, Soft Skills,
-and General Knowledge.
-
-Your goal: maximize the student's mastery across all topics efficiently.
-
-Rules:
-- Pick unlocked topics (unlocked_mask[i] == 1).
-- Match difficulty to mastery: low mastery -> easy, high mastery -> harder.
-- Assess periodically to lock-in gains (assess=1 when mastery > 0.5).
-- Revisit topics whose mastery is decaying (high time_since_review).
-
-Reply with ONLY a valid JSON object, no explanation:
-{"topic": <int 0-65>, "difficulty": <int 0-4>, "assess": <int 0 or 1>}
-""").strip()
+NUM_TOPICS = 66
 
 
-# ── Structured stdout logging ────────────────────────────────────────────────
+# -- Structured stdout logging ------------------------------------------------
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
@@ -109,19 +88,69 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     )
 
 
-# ── LLM action selection ────────────────────────────────────────────────────
-def build_user_prompt(obs: CurriculumObservation, step: int, last_reward: float) -> str:
-    """Build the prompt for the LLM from the current observation."""
-    # Find top unlocked topics with lowest mastery (best candidates)
+# -- Task-specific system prompts --------------------------------------------
+PROMPTS = {
+    "topic_selection": textwrap.dedent("""\
+        You are an AI tutor optimizing TOPIC SELECTION for a student's placement
+        preparation. Your goal: maximize the number of topics mastered.
+
+        The curriculum has 66 topics. Pick unlocked topics with low mastery first.
+        Prioritize topics that are stale (high time_since_review).
+        Use moderate difficulty (1-2) and skip assessments (assess=0) to cover more ground.
+
+        Reply with ONLY valid JSON: {"topic": <int 0-65>, "difficulty": <int 0-4>, "assess": <int 0 or 1>}
+    """).strip(),
+
+    "difficulty_adaptation": textwrap.dedent("""\
+        You are an AI tutor optimizing DIFFICULTY ADAPTATION for a student.
+        Your goal: keep engagement high by matching difficulty to the student's level.
+
+        Rules:
+        - Low mastery topics -> easy (0-1)
+        - Medium mastery -> medium (2)
+        - High mastery -> hard (3-4)
+        - If engagement drops below 0.6, reduce difficulty immediately.
+        - Assess occasionally (assess=1) to validate progress.
+
+        Reply with ONLY valid JSON: {"topic": <int 0-65>, "difficulty": <int 0-4>, "assess": <int 0 or 1>}
+    """).strip(),
+
+    "assessment_timing": textwrap.dedent("""\
+        You are an AI tutor optimizing ASSESSMENT TIMING for a student using
+        spaced repetition principles (Ebbinghaus forgetting curve).
+
+        Your goal: maximize the overall completion rate through well-timed assessments.
+
+        Rules:
+        - Study a topic first (assess=0) to build mastery above 0.4.
+        - Then assess (assess=1) when mastery is between 0.5-0.8 for optimal retention.
+        - Revisit topics before they decay (check time_since_review).
+        - Balance coverage across topics.
+
+        Reply with ONLY valid JSON: {"topic": <int 0-65>, "difficulty": <int 0-4>, "assess": <int 0 or 1>}
+    """).strip(),
+}
+
+# -- Score extractors per task ------------------------------------------------
+SCORE_EXTRACTORS = {
+    "topic_selection": lambda obs: min(max(obs.topics_mastered / NUM_TOPICS, 0.0), 1.0),
+    "difficulty_adaptation": lambda obs: min(max(obs.engagement[0] if obs.engagement else 0.0, 0.0), 1.0),
+    "assessment_timing": lambda obs: min(max(obs.completion_rate, 0.0), 1.0),
+}
+
+SUCCESS_THRESHOLD = 0.01
+
+
+# -- LLM action selection ----------------------------------------------------
+def build_user_prompt(obs: CurriculumObservation, step: int, last_reward: float, task: str) -> str:
     unlocked = [i for i, u in enumerate(obs.unlocked_mask) if u == 1]
     mastery = obs.mastery
     low_mastery = sorted(unlocked, key=lambda i: mastery[i])[:10]
-    # Topics needing review (high time_since_review)
     review = obs.time_since_review
     stale = sorted(unlocked, key=lambda i: -review[i])[:5]
 
     return textwrap.dedent(f"""\
-    Step: {step}/{MAX_STEPS}
+    Task: {task} | Step: {step}/{STEPS_PER_TASK}
     Engagement: {obs.engagement[0]:.2f}
     Topics mastered: {obs.topics_mastered}/{len(mastery)}
     Completion: {obs.completion_rate:.1%}
@@ -141,14 +170,15 @@ def get_llm_action(
     obs: CurriculumObservation,
     step: int,
     last_reward: float,
+    task: str,
 ) -> CurriculumAction:
-    """Ask the LLM to pick the next action given the observation."""
-    user_prompt = build_user_prompt(obs, step, last_reward)
+    system_prompt = PROMPTS[task]
+    user_prompt = build_user_prompt(obs, step, last_reward, task)
     try:
         completion = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             temperature=TEMPERATURE,
@@ -165,58 +195,38 @@ def get_llm_action(
             text = text.strip()
         parsed = json.loads(text)
 
-        topic = int(parsed.get("topic", 0))
-        difficulty = int(parsed.get("difficulty", 0))
-        assess = int(parsed.get("assess", 0))
-
-        # Clamp values
-        topic = max(0, min(65, topic))
-        difficulty = max(0, min(4, difficulty))
-        assess = 1 if assess else 0
+        topic = max(0, min(65, int(parsed.get("topic", 0))))
+        difficulty = max(0, min(4, int(parsed.get("difficulty", 0))))
+        assess = 1 if parsed.get("assess", 0) else 0
 
         return CurriculumAction(topic=topic, difficulty=difficulty, assess=assess)
 
     except Exception as exc:
-        print(f"[DEBUG] LLM action parse failed: {exc}", flush=True)
-        # Fallback: pick a low-mastery unlocked topic
+        print(f"[DEBUG] LLM parse failed: {exc}", flush=True)
         unlocked = [i for i, u in enumerate(obs.unlocked_mask) if u == 1]
-        if unlocked:
-            best = min(unlocked, key=lambda i: obs.mastery[i])
-        else:
-            best = 0
+        best = min(unlocked, key=lambda i: obs.mastery[i]) if unlocked else 0
         return CurriculumAction(topic=best, difficulty=1, assess=0)
 
 
-# ── Main episode loop ────────────────────────────────────────────────────────
-async def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-
-    # Connect to environment
-    if LOCAL_IMAGE_NAME:
-        env = await CurriculumEnv.from_docker_image(LOCAL_IMAGE_NAME)
-    else:
-        env = await CurriculumEnv.from_env("krithickvivek/epoch-ai")
-
+# -- Run a single task -------------------------------------------------------
+async def run_task(env: CurriculumEnv, client: OpenAI, task_name: str) -> float:
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
     success = False
 
-    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
+    log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
     try:
         result = await env.reset()
         obs: CurriculumObservation = result.observation
         last_reward = 0.0
 
-        for step in range(1, MAX_STEPS + 1):
+        for step in range(1, STEPS_PER_TASK + 1):
             if result.done:
                 break
 
-            # LLM decides the next action
-            action = get_llm_action(client, obs, step, last_reward)
-
-            # Step the environment
+            action = get_llm_action(client, obs, step, last_reward, task_name)
             result = await env.step(action)
             obs = result.observation
 
@@ -228,29 +238,56 @@ async def main() -> None:
             steps_taken = step
             last_reward = reward
 
-            # Format action string for logging
             action_str = f"study(topic={action.topic},diff={action.difficulty},assess={action.assess})"
             log_step(step=step, action=action_str, reward=reward, done=done, error=error)
 
             if done:
                 break
 
-        # Score = completion_rate (already 0.0 to 1.0)
-        score = obs.completion_rate if obs else 0.0
+        # Extract task-specific score (clamped to [0, 1])
+        score_fn = SCORE_EXTRACTORS[task_name]
+        score = score_fn(obs) if obs else 0.0
         score = min(max(score, 0.0), 1.0)
-        success = score >= SUCCESS_SCORE_THRESHOLD
+        success = score >= SUCCESS_THRESHOLD
 
     except Exception as exc:
-        print(f"[DEBUG] Episode error: {exc}", flush=True)
+        print(f"[DEBUG] Task {task_name} error: {exc}", flush=True)
         score = 0.0
         success = False
+
+    finally:
+        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+
+    return score
+
+
+# -- Main: run all 3 tasks ---------------------------------------------------
+async def main() -> None:
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+
+    # Connect to environment
+    if LOCAL_IMAGE_NAME:
+        env = await CurriculumEnv.from_docker_image(LOCAL_IMAGE_NAME)
+    else:
+        env = await CurriculumEnv.from_env("krithickvivek/epochai")
+
+    tasks = ["topic_selection", "difficulty_adaptation", "assessment_timing"]
+    scores = []
+
+    try:
+        for task_name in tasks:
+            score = await run_task(env, client, task_name)
+            scores.append(score)
+            print(f"[DEBUG] {task_name} score: {score:.3f}", flush=True)
+
+        avg_score = sum(scores) / len(scores)
+        print(f"[DEBUG] Average score across {len(tasks)} tasks: {avg_score:.3f}", flush=True)
 
     finally:
         try:
             await env.close()
         except Exception as e:
             print(f"[DEBUG] env.close() error: {e}", flush=True)
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 
 if __name__ == "__main__":
