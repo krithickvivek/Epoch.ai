@@ -6,64 +6,113 @@ MANDATORY
     API_BASE_URL   The API endpoint for the LLM.
     MODEL_NAME     The model identifier to use for inference.
     HF_TOKEN       Your Hugging Face / API key.
-    LOCAL_IMAGE_NAME The name of the local image to use for the environment if you are using
-                     from_docker_image() method
-
-- Defaults are set only for API_BASE_URL and MODEL_NAME
-    (and should reflect your active inference setup):
-    API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-    MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
 
 - The inference script must be named `inference.py` and placed in the root directory of the project
 - Participants must use OpenAI Client for all LLM calls using above variables
 
 STDOUT FORMAT
-- The script must emit exactly three line types to stdout, in this order:
-
     [START] task=<task_name> env=<benchmark> model=<model_name>
     [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
     [END]   success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
 
-  Rules:
-    - One [START] line at episode begin.
-    - One [STEP] line per step, immediately after env.step() returns.
-    - One [END] line after env.close(), always emitted (even on exception).
-    - reward and rewards are formatted to 2 decimal places.
-    - done and success are lowercase booleans: true or false.
-    - error is the raw last_action_error string, or null if none.
-    - All fields on a single line with no newlines within a line.
-    - Each tasks should return score in [0, 1]
-
 TASKS (3 graded tasks):
-    1. topic_selection     - Optimize which topics to study for maximum mastery gain
-    2. difficulty_adaptation - Optimize difficulty levels for optimal engagement
-    3. assessment_timing    - Optimize assessment timing for best completion rate
+    1. topic_selection      - Optimize topic choice for maximum mastery gain
+    2. difficulty_adaptation - Optimize difficulty for optimal engagement
+    3. assessment_timing     - Optimize assessment timing for best completion
 """
 
-import asyncio
 import json
 import os
 import textwrap
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
+import requests
 from openai import OpenAI
 
-from client import CurriculumEnv
-from models import CurriculumAction, CurriculumObservation
-
 # -- Environment configuration ------------------------------------------------
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
+API_KEY = HF_TOKEN or os.getenv("API_KEY")
+
+# Space URL — connect directly via HTTP (no Docker needed)
+SPACE_URL = os.getenv(
+    "SPACE_URL", "https://krithickvivek-epochai.hf.space"
+)
 
 BENCHMARK = "curriculum_flow_env"
-STEPS_PER_TASK = 30  # 3 tasks x 30 steps = ~90 steps total, well under 20min
+STEPS_PER_TASK = 30
 TEMPERATURE = 0.7
 MAX_TOKENS = 256
 NUM_TOPICS = 66
+
+
+# -- Simple HTTP Environment Client (no Docker) ------------------------------
+class EnvHTTPClient:
+    """Connects to a running OpenEnv Space via HTTP. No Docker required."""
+
+    def __init__(self, base_url: str):
+        self.base_url = base_url.rstrip("/")
+        self.session = requests.Session()
+        self.session.headers.update({"Content-Type": "application/json"})
+
+    def reset(self) -> Dict[str, Any]:
+        resp = self.session.post(f"{self.base_url}/reset", timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+
+    def step(self, action: Dict[str, Any]) -> Dict[str, Any]:
+        resp = self.session.post(
+            f"{self.base_url}/step",
+            json={"action": action},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def state(self) -> Dict[str, Any]:
+        resp = self.session.get(f"{self.base_url}/state", timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+
+    def close(self):
+        self.session.close()
+
+
+# -- Observation wrapper for LLM prompts -------------------------------------
+class Obs:
+    """Lightweight observation wrapper parsed from JSON response."""
+
+    def __init__(self, data: Dict[str, Any]):
+        info = data.get("info", {})
+        self.topics_mastered = info.get("topics_mastered", 0)
+        self.completion_rate = info.get("completion_rate", 0.0)
+        self.episode_reward = info.get("episode_reward", 0.0)
+        self.student_archetype = info.get("student_archetype", "")
+        self.step = info.get("step", 0)
+
+        # These come from the raw observation in /step's info or from a
+        # separate /state call; provide safe defaults from info
+        self.mastery = info.get("mastery", [0.0] * NUM_TOPICS)
+        self.engagement = info.get("engagement", [0.8])
+        self.time_since_review = info.get("time_since_review", [0.0] * NUM_TOPICS)
+        self.unlocked_mask = info.get("unlocked_mask", [1] * NUM_TOPICS)
+
+        # Try to extract richer data from a state response
+        student = info.get("student", {})
+        if student:
+            self._load_from_student(student)
+
+    def _load_from_student(self, student: Dict[str, Any]):
+        if "mastery" in student and isinstance(student["mastery"], dict):
+            self.mastery = [student["mastery"].get(str(i), 0.0) for i in range(NUM_TOPICS)]
+        if "engagement" in student:
+            eng = student["engagement"]
+            self.engagement = [eng] if isinstance(eng, (int, float)) else eng
+        if "time_since_review" in student and isinstance(student["time_since_review"], dict):
+            self.time_since_review = [
+                student["time_since_review"].get(str(i), 0.0) for i in range(NUM_TOPICS)
+            ]
 
 
 # -- Structured stdout logging ------------------------------------------------
@@ -142,7 +191,7 @@ SUCCESS_THRESHOLD = 0.01
 
 
 # -- LLM action selection ----------------------------------------------------
-def build_user_prompt(obs: CurriculumObservation, step: int, last_reward: float, task: str) -> str:
+def build_user_prompt(obs: Obs, step: int, last_reward: float, task: str) -> str:
     unlocked = [i for i, u in enumerate(obs.unlocked_mask) if u == 1]
     mastery = obs.mastery
     low_mastery = sorted(unlocked, key=lambda i: mastery[i])[:10]
@@ -166,12 +215,8 @@ def build_user_prompt(obs: CurriculumObservation, step: int, last_reward: float,
 
 
 def get_llm_action(
-    client: OpenAI,
-    obs: CurriculumObservation,
-    step: int,
-    last_reward: float,
-    task: str,
-) -> CurriculumAction:
+    client: OpenAI, obs: Obs, step: int, last_reward: float, task: str
+) -> Dict[str, int]:
     system_prompt = PROMPTS[task]
     user_prompt = build_user_prompt(obs, step, last_reward, task)
     try:
@@ -187,7 +232,7 @@ def get_llm_action(
         )
         text = (completion.choices[0].message.content or "").strip()
 
-        # Parse JSON from response (handle markdown code blocks)
+        # Parse JSON (handle markdown code blocks)
         if "```" in text:
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -195,56 +240,87 @@ def get_llm_action(
             text = text.strip()
         parsed = json.loads(text)
 
-        topic = max(0, min(65, int(parsed.get("topic", 0))))
-        difficulty = max(0, min(4, int(parsed.get("difficulty", 0))))
-        assess = 1 if parsed.get("assess", 0) else 0
-
-        return CurriculumAction(topic=topic, difficulty=difficulty, assess=assess)
+        return {
+            "topic": max(0, min(65, int(parsed.get("topic", 0)))),
+            "difficulty": max(0, min(4, int(parsed.get("difficulty", 0)))),
+            "assess": 1 if parsed.get("assess", 0) else 0,
+        }
 
     except Exception as exc:
         print(f"[DEBUG] LLM parse failed: {exc}", flush=True)
         unlocked = [i for i, u in enumerate(obs.unlocked_mask) if u == 1]
         best = min(unlocked, key=lambda i: obs.mastery[i]) if unlocked else 0
-        return CurriculumAction(topic=best, difficulty=1, assess=0)
+        return {"topic": best, "difficulty": 1, "assess": 0}
 
 
 # -- Run a single task -------------------------------------------------------
-async def run_task(env: CurriculumEnv, client: OpenAI, task_name: str) -> float:
+def run_task(env: EnvHTTPClient, llm: OpenAI, task_name: str) -> float:
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
     success = False
+    obs = None
 
     log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        result = await env.reset()
-        obs: CurriculumObservation = result.observation
+        # Reset environment
+        reset_data = env.reset()
+        obs = Obs(reset_data)
+
+        # Fetch full state to get mastery/engagement arrays
+        try:
+            state_data = env.state()
+            obs = Obs(state_data)
+        except Exception:
+            pass
+
         last_reward = 0.0
+        done = False
 
         for step in range(1, STEPS_PER_TASK + 1):
-            if result.done:
+            if done:
                 break
 
-            action = get_llm_action(client, obs, step, last_reward, task_name)
-            result = await env.step(action)
-            obs = result.observation
+            action = get_llm_action(llm, obs, step, last_reward, task_name)
 
-            reward = result.reward or 0.0
-            done = result.done
-            error = None
+            # Step environment
+            step_data = env.step(action)
+            reward = float(step_data.get("reward", 0.0))
+            done = bool(step_data.get("done", False))
+            error = step_data.get("info", {}).get("error")
+
+            # Update observation from step response
+            obs = Obs(step_data)
+
+            # If step response lacks mastery arrays, fetch state
+            if not any(m > 0 for m in obs.mastery):
+                try:
+                    state_data = env.state()
+                    state_obs = Obs(state_data)
+                    # Merge: keep step info but use state for arrays
+                    state_obs.topics_mastered = obs.topics_mastered or state_obs.topics_mastered
+                    state_obs.completion_rate = obs.completion_rate or state_obs.completion_rate
+                    state_obs.episode_reward = obs.episode_reward or state_obs.episode_reward
+                    obs = state_obs
+                except Exception:
+                    pass
 
             rewards.append(reward)
             steps_taken = step
             last_reward = reward
 
-            action_str = f"study(topic={action.topic},diff={action.difficulty},assess={action.assess})"
+            action_str = (
+                f"study(topic={action['topic']},"
+                f"diff={action['difficulty']},"
+                f"assess={action['assess']})"
+            )
             log_step(step=step, action=action_str, reward=reward, done=done, error=error)
 
             if done:
                 break
 
-        # Extract task-specific score (clamped to [0, 1])
+        # Task-specific score clamped to [0, 1]
         score_fn = SCORE_EXTRACTORS[task_name]
         score = score_fn(obs) if obs else 0.0
         score = min(max(score, 0.0), 1.0)
@@ -262,21 +338,16 @@ async def run_task(env: CurriculumEnv, client: OpenAI, task_name: str) -> float:
 
 
 # -- Main: run all 3 tasks ---------------------------------------------------
-async def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-
-    # Connect to environment
-    if LOCAL_IMAGE_NAME:
-        env = await CurriculumEnv.from_docker_image(LOCAL_IMAGE_NAME)
-    else:
-        env = await CurriculumEnv.from_env("krithickvivek/epochai")
+def main() -> None:
+    llm = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+    env = EnvHTTPClient(SPACE_URL)
 
     tasks = ["topic_selection", "difficulty_adaptation", "assessment_timing"]
     scores = []
 
     try:
         for task_name in tasks:
-            score = await run_task(env, client, task_name)
+            score = run_task(env, llm, task_name)
             scores.append(score)
             print(f"[DEBUG] {task_name} score: {score:.3f}", flush=True)
 
@@ -284,11 +355,8 @@ async def main() -> None:
         print(f"[DEBUG] Average score across {len(tasks)} tasks: {avg_score:.3f}", flush=True)
 
     finally:
-        try:
-            await env.close()
-        except Exception as e:
-            print(f"[DEBUG] env.close() error: {e}", flush=True)
+        env.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
