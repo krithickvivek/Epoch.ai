@@ -2280,10 +2280,13 @@ async def predict_endpoint(req: PredictRequest = None):
             # --- RESET ---
             if command == "reset":
                 obs, info = env.reset()
+                obs_json = obs_to_json(obs)
                 return {
-                    "status": "success",
-                    "command": "reset",
-                    "observation": obs_to_json(obs),
+                    "observation": f"Environment reset. Student archetype: {info.get('student_archetype', 'unknown')}. "
+                                   f"Topics: {NUM_TOPICS}. Mastered: {info.get('topics_mastered', 0)}. "
+                                   f"Completion: {info.get('completion_rate', 0.0):.2f}. Engagement: {float(obs_json.get('engagement', [0.8])[0]):.2f}.",
+                    "reward": 0.0,
+                    "done": False,
                     "info": info,
                 }
 
@@ -2291,17 +2294,24 @@ async def predict_endpoint(req: PredictRequest = None):
             if command == "state":
                 state = env.state()
                 return {
-                    "status": "success",
-                    "command": "state",
-                    "state": state,
+                    "observation": f"Current state: step {state.get('step', 0)}, "
+                                   f"mastered {state.get('topics_mastered', 0)}/{NUM_TOPICS} topics, "
+                                   f"completion {state.get('completion_rate', 0.0):.2f}.",
+                    "reward": 0.0,
+                    "done": False,
+                    "info": state,
                 }
 
             # --- SPEC ---
             if command == "spec":
                 spec_path = BASE_DIR / "openenv_spec.json"
-                if spec_path.exists():
-                    return {"status": "success", "command": "spec", **json.loads(spec_path.read_text())}
-                return {"status": "success", "command": "spec", "name": "CurriculumFlowENV", "num_topics": NUM_TOPICS}
+                spec_data = json.loads(spec_path.read_text()) if spec_path.exists() else {"name": "CurriculumFlowENV"}
+                return {
+                    "observation": f"Spec: {spec_data.get('name', 'CurriculumFlowENV')} - {spec_data.get('description', '')}",
+                    "reward": 0.0,
+                    "done": False,
+                    "info": spec_data,
+                }
 
             # --- STEP (explicit action or agent-recommended) ---
             if action is None:
@@ -2315,22 +2325,18 @@ async def predict_endpoint(req: PredictRequest = None):
                 action = {"topic": int(topic), "difficulty": int(diff), "assess": int(assess)}
 
             obs, reward, terminated, truncated, info = env.step(action)
+            obs_json = obs_to_json(obs)
+            done = terminated or truncated
 
             return {
-                "status": "success",
-                "action": action,
-                "observation": obs_to_json(obs),
+                "observation": f"Step {info.get('step', 0)}: topic={info.get('topic_name', 'unknown')}, "
+                               f"difficulty={info.get('difficulty', 0)}, reward={float(reward):.4f}, "
+                               f"mastered={info.get('topics_mastered', 0)}/{NUM_TOPICS}, "
+                               f"completion={info.get('completion_rate', 0.0):.2f}, "
+                               f"engagement={float(obs_json.get('engagement', [0.0])[0]):.2f}.",
                 "reward": float(reward),
-                "terminated": terminated,
-                "truncated": truncated,
-                "done": terminated or truncated,
+                "done": done,
                 "info": info,
-                # Human-readable summary fields
-                "next_topic": info.get("topic_name", ""),
-                "difficulty": ["easy", "medium", "hard", "advanced", "expert"][min(info.get("difficulty", 1) - 1, 4)],
-                "engagement_score": round(float(obs_to_json(obs).get("engagement", [0.0])[0]), 4),
-                "topics_mastered": info.get("topics_mastered", 0),
-                "completion_rate": info.get("completion_rate", 0.0),
             }
 
         except Exception as e:
@@ -2348,7 +2354,16 @@ async def api_reset(req: ResetRequest = None):
         options = {"archetype": req.archetype} if req and req.archetype else None
         seed = req.seed if req else None
         obs, info = env.reset(seed=seed, options=options)
-        return {"observation": obs_to_json(obs), "info": info}
+        obs_json = obs_to_json(obs)
+        return {
+            "observation": f"Environment reset. Student archetype: {info.get('student_archetype', 'unknown')}. "
+                           f"Topics: {NUM_TOPICS}. Mastered: {info.get('topics_mastered', 0)}. "
+                           f"Completion: {info.get('completion_rate', 0.0):.2f}. "
+                           f"Engagement: {float(obs_json.get('engagement', [0.8])[0]):.2f}.",
+            "reward": 0.0,
+            "done": False,
+            "info": info,
+        }
 
 @app.post("/api/step")
 @app.post("/step")
@@ -2405,28 +2420,38 @@ async def get_metadata():
 @app.get("/schema")
 async def get_schema():
     return {
-        "action": {
-            "type": "Dict",
-            "spaces": {
-                "topic": "Discrete(66)",
-                "difficulty": "Discrete(5)",
-                "assess": "Discrete(2)",
+        "topic_selection": {
+            "description": "Select the optimal next topic for the student based on mastery levels, forgetting curves, and prerequisite dependencies.",
+            "parameters": {
+                "topic": {"type": "integer", "min": 0, "max": 65, "description": "Topic index from the 66-topic curriculum graph"},
+            },
+            "evaluation_criteria": {
+                "mastery_gain": "Improvement in student mastery across all topics (0.0-1.0)",
+                "prerequisite_respect": "Whether selected topics follow prerequisite ordering",
+                "engagement_maintenance": "Student engagement stays above 0.5 threshold",
             },
         },
-        "observation": {
-            "type": "Dict",
-            "spaces": {
-                "mastery": "Box(66,)",
-                "engagement": "Box(1,)",
-                "recent_accuracy": "Box(10,)",
-                "time_since_review": "Box(66,)",
-                "current_topic": "Discrete(66)",
-                "unlocked_mask": "MultiBinary(66)",
+        "difficulty_adaptation": {
+            "description": "Adapt the difficulty level of the current topic to match the student's zone of proximal development.",
+            "parameters": {
+                "difficulty": {"type": "integer", "min": 0, "max": 4, "description": "Difficulty level: 0=easy, 1=medium, 2=hard, 3=advanced, 4=expert"},
+            },
+            "evaluation_criteria": {
+                "accuracy_rate": "Student accuracy remains in 0.6-0.9 optimal range",
+                "difficulty_progression": "Difficulty increases as mastery improves",
+                "no_frustration": "Difficulty does not exceed student capability causing engagement drop",
             },
         },
-        "state": {
-            "type": "Dict",
-            "fields": ["mastery", "engagement", "step", "archetype", "completion_rate"],
+        "assessment_timing": {
+            "description": "Decide whether to assess the student on the current topic based on Ebbinghaus forgetting curve timing.",
+            "parameters": {
+                "assess": {"type": "integer", "min": 0, "max": 1, "description": "0=skip assessment, 1=assess now"},
+            },
+            "evaluation_criteria": {
+                "retention_optimization": "Assessments timed to maximize long-term retention via spaced repetition",
+                "completion_rate": "Overall curriculum completion rate (0.0-1.0)",
+                "mastery_threshold": "Topics reach mastery threshold of 0.8 before moving on",
+            },
         },
     }
 
