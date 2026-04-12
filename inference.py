@@ -181,10 +181,18 @@ PROMPTS = {
 }
 
 # -- Score extractors per task ------------------------------------------------
+# Scores must be STRICTLY in (0, 1) — not 0.0 and not 1.0
+SCORE_FLOOR = 0.001
+SCORE_CEIL = 0.999
+
+def _clamp_score(raw: float) -> float:
+    """Clamp score to strict (0, 1) range — never exactly 0.0 or 1.0."""
+    return min(max(raw, SCORE_FLOOR), SCORE_CEIL)
+
 SCORE_EXTRACTORS = {
-    "topic_selection": lambda obs: min(max(obs.topics_mastered / NUM_TOPICS, 0.0), 1.0),
-    "difficulty_adaptation": lambda obs: min(max(obs.engagement[0] if obs.engagement else 0.0, 0.0), 1.0),
-    "assessment_timing": lambda obs: min(max(obs.completion_rate, 0.0), 1.0),
+    "topic_selection": lambda obs: _clamp_score(obs.topics_mastered / NUM_TOPICS),
+    "difficulty_adaptation": lambda obs: _clamp_score(obs.engagement[0] if obs.engagement else 0.5),
+    "assessment_timing": lambda obs: _clamp_score(obs.completion_rate),
 }
 
 SUCCESS_THRESHOLD = 0.01
@@ -320,15 +328,15 @@ def run_task(env: EnvHTTPClient, llm: OpenAI, task_name: str) -> float:
             if done:
                 break
 
-        # Task-specific score clamped to [0, 1]
+        # Task-specific score — strict (0, 1), never 0.0 or 1.0
         score_fn = SCORE_EXTRACTORS[task_name]
-        score = score_fn(obs) if obs else 0.0
-        score = min(max(score, 0.0), 1.0)
+        score = score_fn(obs) if obs else SCORE_FLOOR
+        score = _clamp_score(score)
         success = score >= SUCCESS_THRESHOLD
 
     except Exception as exc:
         print(f"[DEBUG] Task {task_name} error: {exc}", flush=True)
-        score = 0.0
+        score = SCORE_FLOOR
         success = False
 
     finally:
