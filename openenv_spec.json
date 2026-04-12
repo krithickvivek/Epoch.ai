@@ -25,14 +25,16 @@
   "reward_range": [-100, 100],
   "max_episode_steps": 200,
   "student_archetypes": ["fast", "steady", "struggling", "bursty", "anxious"],
-  "authors": ["your-hf-username"],
+  "authors": ["krithickvivek"],
   "license": "Apache-2.0",
   "paper_reference": "Ebbinghaus (1885) forgetting curve · Zone of Proximal Development (Vygotsky)",
   "endpoints": {
+    "predict": "/predict",
     "reset": "/reset",
     "step": "/step",
     "state": "/state",
     "health": "/health",
-    "spec": "/spec"
+    "spec": "/spec",
+    "websocket": "/ws"
   }
 }

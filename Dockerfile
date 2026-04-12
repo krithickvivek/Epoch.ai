@@ -24,14 +24,18 @@ USER user
 # HF Spaces persistent storage volume
 VOLUME /data
 
-# Environment variables for OpenEnv scaling
+# Environment variables
 ENV WORKERS=2
 ENV MAX_CONCURRENT_ENVS=100
 ENV PORT=7860
 ENV HOST=0.0.0.0
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 7860
 
-HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:7860/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:7860/health || exit 1
 
+# Start the main app — serves both the web UI and all OpenENV API endpoints
+# (/predict, /reset, /step, /state, /health, /spec, /ws)
 CMD ["uvicorn", "curriculum_flow_env.server:app", "--host", "0.0.0.0", "--port", "7860"]

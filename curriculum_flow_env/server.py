@@ -2218,12 +2218,128 @@ async def ai_support_chat(request: Request, payload: AIChatRequest):
 
 # """ OPENENV CORE API ENDPOINTS """
 
+class PredictRequest(BaseModel):
+    input_data: str | dict | None = None
+    action: dict | None = None
+    command: str | None = None
+
 class ResetRequest(BaseModel):
     archetype: str | None = None
     seed: int | None = None
 
 class ActionRequest(BaseModel):
     action: dict
+
+
+@app.post("/predict")
+@app.post("/api/predict")
+async def predict_endpoint(req: PredictRequest = None):
+    """
+    OpenENV-compatible predict endpoint.
+
+    Accepts:
+      - {"command": "reset"}                              -> reset env
+      - {"command": "state"}                              -> get state
+      - {"command": "spec"}                               -> get spec
+      - {"action": {"topic": 0, "difficulty": 2, ...}}    -> explicit step
+      - {"input_data": "reset"} or {"input_data": {...}}  -> flexible input
+      - Empty body / no action                            -> agent-recommended step
+
+    Returns JSON with status, observation, reward, and human-readable fields.
+    """
+    async with env_lock:
+        try:
+            # Parse the incoming request into a command or action
+            command = None
+            action = None
+
+            if req is not None:
+                command = req.command
+                action = req.action
+
+                # Handle input_data (string or dict)
+                if req.input_data is not None and command is None and action is None:
+                    if isinstance(req.input_data, str):
+                        text = req.input_data.strip().lower()
+                        if text in ("reset", "state", "spec", "step", "auto", "next"):
+                            command = text
+                        else:
+                            # Try parsing as JSON action
+                            try:
+                                import json as _json
+                                action = _json.loads(req.input_data)
+                            except (ValueError, TypeError):
+                                command = "step"  # default to agent step
+                    elif isinstance(req.input_data, dict):
+                        action = req.input_data
+
+            # Default: agent-recommended step
+            if command is None and action is None:
+                command = "step"
+
+            # --- RESET ---
+            if command == "reset":
+                obs, info = env.reset()
+                return {
+                    "status": "success",
+                    "command": "reset",
+                    "observation": obs_to_json(obs),
+                    "info": info,
+                }
+
+            # --- STATE ---
+            if command == "state":
+                state = env.state()
+                return {
+                    "status": "success",
+                    "command": "state",
+                    "state": state,
+                }
+
+            # --- SPEC ---
+            if command == "spec":
+                spec_path = BASE_DIR / "openenv_spec.json"
+                if spec_path.exists():
+                    return {"status": "success", "command": "spec", **json.loads(spec_path.read_text())}
+                return {"status": "success", "command": "spec", "name": "CurriculumFlowENV", "num_topics": NUM_TOPICS}
+
+            # --- STEP (explicit action or agent-recommended) ---
+            if action is None:
+                # Agent-recommended action
+                obs_raw = env._get_obs()
+                info_raw = env.state()
+                obs_dict = {k: v.tolist() if hasattr(v, 'tolist') else v for k, v in obs_raw.items()}
+                topic = env.sequencer.select_action(obs_dict, info_raw)
+                diff = env.difficulty_agent.select_action(obs_dict, info_raw)
+                assess = env.assessment_agent.select_action(obs_dict, info_raw)
+                action = {"topic": int(topic), "difficulty": int(diff), "assess": int(assess)}
+
+            obs, reward, terminated, truncated, info = env.step(action)
+
+            return {
+                "status": "success",
+                "action": action,
+                "observation": obs_to_json(obs),
+                "reward": float(reward),
+                "terminated": terminated,
+                "truncated": truncated,
+                "done": terminated or truncated,
+                "info": info,
+                # Human-readable summary fields
+                "next_topic": info.get("topic_name", ""),
+                "difficulty": ["easy", "medium", "hard", "advanced", "expert"][min(info.get("difficulty", 1) - 1, 4)],
+                "engagement_score": round(float(obs_to_json(obs).get("engagement", [0.0])[0]), 4),
+                "topics_mastered": info.get("topics_mastered", 0),
+                "completion_rate": info.get("completion_rate", 0.0),
+            }
+
+        except Exception as e:
+            logger.error(f"/predict error: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"status": "error", "error": str(e)},
+            )
+
 
 @app.post("/api/reset")
 @app.post("/reset")
