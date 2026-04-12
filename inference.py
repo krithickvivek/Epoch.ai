@@ -1,245 +1,257 @@
 """
-Epoch.ai / CurriculumFlowENV — OpenENV Inference Script
+Inference Script - CurriculumFlowENV
+===================================
+MANDATORY
+- Before submitting, ensure the following variables are defined in your environment configuration:
+    API_BASE_URL   The API endpoint for the LLM.
+    MODEL_NAME     The model identifier to use for inference.
+    HF_TOKEN       Your Hugging Face / API key.
+    LOCAL_IMAGE_NAME The name of the local image to use for the environment if you are using
+                     from_docker_image() method
 
-This module provides:
-  - A global RL environment instance
-  - A `predict(input_data)` function for HF Spaces inference
-  - Self-test validation when run directly
+- Defaults are set only for API_BASE_URL and MODEL_NAME
+    (and should reflect your active inference setup):
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+    MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2.5-72B-Instruct")
 
-The predict() function is the entry point that OpenENV validation calls.
-It also backs the POST /predict API endpoint in the main FastAPI server.
+- The inference script must be named `inference.py` and placed in the root directory of the project
+- Participants must use OpenAI Client for all LLM calls using above variables
+
+STDOUT FORMAT
+- The script must emit exactly three line types to stdout, in this order:
+
+    [START] task=<task_name> env=<benchmark> model=<model_name>
+    [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
+    [END]   success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
+
+  Rules:
+    - One [START] line at episode begin.
+    - One [STEP] line per step, immediately after env.step() returns.
+    - One [END] line after env.close(), always emitted (even on exception).
+    - reward and rewards are formatted to 2 decimal places.
+    - done and success are lowercase booleans: true or false.
+    - error is the raw last_action_error string, or null if none.
+    - All fields on a single line with no newlines within a line.
+    - Each tasks should return score in [0, 1]
 """
 
+import asyncio
 import json
-import sys
+import os
+import textwrap
+from typing import List, Optional
 
-from curriculum_flow_env.env import CurriculumFlowEnv
-from curriculum_flow_env.simulation.curriculum import NUM_TOPICS, TOPIC_NAMES
+from openai import OpenAI
+
+from client import CurriculumEnv
+from models import CurriculumAction, CurriculumObservation
+
+# ── Environment configuration ────────────────────────────────────────────────
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+TASK_NAME = os.getenv("CURRICULUM_TASK", "adaptive_curriculum")
+BENCHMARK = os.getenv("CURRICULUM_BENCHMARK", "curriculum_flow_env")
+MAX_STEPS = 50
+TEMPERATURE = 0.7
+MAX_TOKENS = 256
+
+# ── Scoring ──────────────────────────────────────────────────────────────────
+# Score is completion_rate (0.0 to 1.0) — fraction of curriculum mastered
+SUCCESS_SCORE_THRESHOLD = 0.05
+
+# ── Prompts ──────────────────────────────────────────────────────────────────
+SYSTEM_PROMPT = textwrap.dedent("""\
+You are an AI tutor optimizing a student's learning path through a placement
+preparation curriculum. Each turn you choose which topic to study, the difficulty
+level, and whether to test the student.
+
+The environment has 66 topics across categories: Quantitative Aptitude, Logical
+Reasoning, Verbal Ability, Data Interpretation, Programming & CS, DSA, Soft Skills,
+and General Knowledge.
+
+Your goal: maximize the student's mastery across all topics efficiently.
+
+Rules:
+- Pick unlocked topics (unlocked_mask[i] == 1).
+- Match difficulty to mastery: low mastery -> easy, high mastery -> harder.
+- Assess periodically to lock-in gains (assess=1 when mastery > 0.5).
+- Revisit topics whose mastery is decaying (high time_since_review).
+
+Reply with ONLY a valid JSON object, no explanation:
+{"topic": <int 0-65>, "difficulty": <int 0-4>, "assess": <int 0 or 1>}
+""").strip()
 
 
-def load_environment(archetype: str = "steady", seed: int = 42) -> CurriculumFlowEnv:
-    """Load and reset the CurriculumFlowENV gymnasium environment."""
-    env = CurriculumFlowEnv(archetype=archetype, max_steps=200, seed=seed)
-    env.reset(seed=seed)
-    return env
+# ── Structured stdout logging ────────────────────────────────────────────────
+def log_start(task: str, env: str, model: str) -> None:
+    print(f"[START] task={task} env={env} model={model}", flush=True)
 
 
-# Global environment instance (lazy-loaded on first predict call)
-_env: CurriculumFlowEnv = None
+def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+    error_val = error if error else "null"
+    done_val = str(done).lower()
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
+        flush=True,
+    )
 
 
-def _get_env() -> CurriculumFlowEnv:
-    global _env
-    if _env is None:
-        _env = load_environment()
-    return _env
+def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(
+        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
+        flush=True,
+    )
 
 
-def _obs_to_dict(obs: dict) -> dict:
-    """Convert numpy arrays in observation to JSON-serializable types."""
-    out = {}
-    for k, v in obs.items():
-        try:
-            out[k] = v.tolist()
-        except AttributeError:
-            out[k] = int(v) if hasattr(v, "item") else v
-    return out
+# ── LLM action selection ────────────────────────────────────────────────────
+def build_user_prompt(obs: CurriculumObservation, step: int, last_reward: float) -> str:
+    """Build the prompt for the LLM from the current observation."""
+    # Find top unlocked topics with lowest mastery (best candidates)
+    unlocked = [i for i, u in enumerate(obs.unlocked_mask) if u == 1]
+    mastery = obs.mastery
+    low_mastery = sorted(unlocked, key=lambda i: mastery[i])[:10]
+    # Topics needing review (high time_since_review)
+    review = obs.time_since_review
+    stale = sorted(unlocked, key=lambda i: -review[i])[:5]
+
+    return textwrap.dedent(f"""\
+    Step: {step}/{MAX_STEPS}
+    Engagement: {obs.engagement[0]:.2f}
+    Topics mastered: {obs.topics_mastered}/{len(mastery)}
+    Completion: {obs.completion_rate:.1%}
+    Last reward: {last_reward:.2f}
+    Episode reward: {obs.episode_reward:.2f}
+
+    Unlocked topics ({len(unlocked)} of {len(mastery)}): {unlocked[:20]}...
+    Lowest mastery (top 10): {[(i, round(mastery[i],2)) for i in low_mastery]}
+    Most stale (top 5): {[(i, round(review[i],1)) for i in stale]}
+
+    Choose the next action as JSON: {{"topic": <int>, "difficulty": <int 0-4>, "assess": <0 or 1>}}
+    """).strip()
 
 
-def predict(input_data) -> str:
-    """
-    OpenENV-compatible predict function.
+def get_llm_action(
+    client: OpenAI,
+    obs: CurriculumObservation,
+    step: int,
+    last_reward: float,
+) -> CurriculumAction:
+    """Ask the LLM to pick the next action given the observation."""
+    user_prompt = build_user_prompt(obs, step, last_reward)
+    try:
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=TEMPERATURE,
+            max_tokens=MAX_TOKENS,
+            stream=False,
+        )
+        text = (completion.choices[0].message.content or "").strip()
 
-    Args:
-        input_data: Can be:
-          - A string: "reset", "state", "spec", "step"/"auto"/"next",
-            or a JSON-encoded action like '{"topic":0,"difficulty":2,"assess":0}'
-          - A dict: {"topic": 0, "difficulty": 2, "assess": 0}
-                    or {"command": "reset"} etc.
+        # Parse JSON from response (handle markdown code blocks)
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+        parsed = json.loads(text)
 
-    Returns:
-        JSON string with status, observation, reward, and human-readable fields.
-    """
-    env = _get_env()
+        topic = int(parsed.get("topic", 0))
+        difficulty = int(parsed.get("difficulty", 0))
+        assess = int(parsed.get("assess", 0))
+
+        # Clamp values
+        topic = max(0, min(65, topic))
+        difficulty = max(0, min(4, difficulty))
+        assess = 1 if assess else 0
+
+        return CurriculumAction(topic=topic, difficulty=difficulty, assess=assess)
+
+    except Exception as exc:
+        print(f"[DEBUG] LLM action parse failed: {exc}", flush=True)
+        # Fallback: pick a low-mastery unlocked topic
+        unlocked = [i for i, u in enumerate(obs.unlocked_mask) if u == 1]
+        if unlocked:
+            best = min(unlocked, key=lambda i: obs.mastery[i])
+        else:
+            best = 0
+        return CurriculumAction(topic=best, difficulty=1, assess=0)
+
+
+# ── Main episode loop ────────────────────────────────────────────────────────
+async def main() -> None:
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+
+    # Connect to environment
+    if LOCAL_IMAGE_NAME:
+        env = await CurriculumEnv.from_docker_image(LOCAL_IMAGE_NAME)
+    else:
+        env = await CurriculumEnv.from_env("krithickvivek/epoch-ai")
+
+    rewards: List[float] = []
+    steps_taken = 0
+    score = 0.0
+    success = False
+
+    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        command = None
-        action = None
+        result = await env.reset()
+        obs: CurriculumObservation = result.observation
+        last_reward = 0.0
 
-        # Parse input
-        if isinstance(input_data, str):
-            text = input_data.strip().lower()
-            if text in ("reset", "state", "spec", "step", "auto", "next"):
-                command = text
-            else:
-                try:
-                    parsed = json.loads(input_data)
-                    if isinstance(parsed, dict):
-                        if "command" in parsed:
-                            command = parsed["command"]
-                        elif "action" in parsed:
-                            action = parsed["action"]
-                        elif "topic" in parsed:
-                            action = parsed
-                        else:
-                            command = "step"
-                    else:
-                        command = "step"
-                except (json.JSONDecodeError, ValueError):
-                    command = "step"
-        elif isinstance(input_data, dict):
-            if "command" in input_data:
-                command = input_data["command"]
-            elif "action" in input_data:
-                action = input_data["action"]
-            elif "topic" in input_data:
-                action = input_data
-            else:
-                command = "step"
-        else:
-            command = "step"
+        for step in range(1, MAX_STEPS + 1):
+            if result.done:
+                break
 
-        # Normalize step-like commands
-        if command in ("step", "auto", "next"):
-            command = "step"
+            # LLM decides the next action
+            action = get_llm_action(client, obs, step, last_reward)
 
-        # --- RESET ---
-        if command == "reset":
-            obs, info = env.reset()
-            return json.dumps({
-                "status": "success",
-                "command": "reset",
-                "observation": _obs_to_dict(obs),
-                "info": info,
-            }, default=str)
+            # Step the environment
+            result = await env.step(action)
+            obs = result.observation
 
-        # --- STATE ---
-        if command == "state":
-            return json.dumps({
-                "status": "success",
-                "command": "state",
-                "state": env.state(),
-            }, default=str)
+            reward = result.reward or 0.0
+            done = result.done
+            error = None
 
-        # --- SPEC ---
-        if command == "spec":
-            return json.dumps({
-                "status": "success",
-                "command": "spec",
-                "name": "CurriculumFlowENV",
-                "num_topics": NUM_TOPICS,
-                "max_steps": env.max_steps,
-                "action_space": {"topic": NUM_TOPICS, "difficulty": 5, "assess": 2},
-            })
+            rewards.append(reward)
+            steps_taken = step
+            last_reward = reward
 
-        # --- STEP ---
-        if action is None:
-            # Agent-recommended action
-            obs_raw = env._get_obs()
-            info_raw = env.state()
-            obs_dict = {k: v.tolist() if hasattr(v, "tolist") else v for k, v in obs_raw.items()}
-            topic = env.sequencer.select_action(obs_dict, info_raw)
-            diff = env.difficulty_agent.select_action(obs_dict, info_raw)
-            assess = env.assessment_agent.select_action(obs_dict, info_raw)
-            action = {"topic": int(topic), "difficulty": int(diff), "assess": int(assess)}
+            # Format action string for logging
+            action_str = f"study(topic={action.topic},diff={action.difficulty},assess={action.assess})"
+            log_step(step=step, action=action_str, reward=reward, done=done, error=error)
 
-        obs, reward, terminated, truncated, info = env.step(action)
-        obs_dict = _obs_to_dict(obs)
-        engagement = obs_dict.get("engagement", [0.0])
-        eng_val = engagement[0] if isinstance(engagement, list) and engagement else 0.0
+            if done:
+                break
 
-        return json.dumps({
-            "status": "success",
-            "action": action,
-            "observation": obs_dict,
-            "reward": float(reward),
-            "terminated": bool(terminated),
-            "truncated": bool(truncated),
-            "done": bool(terminated or truncated),
-            "info": info,
-            # Human-readable summary
-            "next_topic": info.get("topic_name", ""),
-            "difficulty": ["easy", "medium", "hard", "advanced", "expert"][
-                min(info.get("difficulty", 1) - 1, 4)
-            ],
-            "engagement_score": round(float(eng_val), 4),
-            "topics_mastered": info.get("topics_mastered", 0),
-            "completion_rate": info.get("completion_rate", 0.0),
-        }, default=str)
+        # Score = completion_rate (already 0.0 to 1.0)
+        score = obs.completion_rate if obs else 0.0
+        score = min(max(score, 0.0), 1.0)
+        success = score >= SUCCESS_SCORE_THRESHOLD
 
-    except Exception as e:
-        return json.dumps({"status": "error", "error": str(e)})
+    except Exception as exc:
+        print(f"[DEBUG] Episode error: {exc}", flush=True)
+        score = 0.0
+        success = False
+
+    finally:
+        try:
+            await env.close()
+        except Exception as e:
+            print(f"[DEBUG] env.close() error: {e}", flush=True)
+        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 
-# ---------------------------------------------------------------------------
-# Self-test: validates that the environment + predict function work end-to-end
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("=" * 60)
-    print("Epoch.ai / CurriculumFlowENV — Inference Self-Test")
-    print("=" * 60)
-    errors = 0
-
-    # 1. Reset
-    print("\n[1] Reset environment")
-    result = json.loads(predict("reset"))
-    assert result["status"] == "success", f"Reset failed: {result}"
-    assert "observation" in result, "Reset must return observation"
-    print(f"    OK — keys: {list(result['observation'].keys())}")
-
-    # 2. Agent-recommended step
-    print("\n[2] Agent-recommended step (text: 'step')")
-    result = json.loads(predict("step"))
-    assert result["status"] == "success", f"Step failed: {result}"
-    assert "reward" in result, "Step must return reward"
-    print(f"    OK — reward={result['reward']:.4f}, topic={result.get('next_topic','')}")
-
-    # 3. Explicit action (JSON string)
-    print("\n[3] Explicit action via JSON string")
-    result = json.loads(predict('{"topic": 1, "difficulty": 2, "assess": 0}'))
-    assert result["status"] == "success", f"Explicit action failed: {result}"
-    print(f"    OK — reward={result['reward']:.4f}")
-
-    # 4. Explicit action (dict)
-    print("\n[4] Explicit action via dict")
-    result = json.loads(predict({"topic": 2, "difficulty": 1, "assess": 1}))
-    assert result["status"] == "success", f"Dict action failed: {result}"
-    print(f"    OK — reward={result['reward']:.4f}")
-
-    # 5. State
-    print("\n[5] Query state")
-    result = json.loads(predict("state"))
-    assert result["status"] == "success"
-    assert "state" in result
-    print(f"    OK — step_count={result['state'].get('step_count', 'N/A')}")
-
-    # 6. Spec
-    print("\n[6] Query spec")
-    result = json.loads(predict("spec"))
-    assert result["name"] == "CurriculumFlowENV"
-    print(f"    OK — {result['name']}, {result['num_topics']} topics")
-
-    # 7. Multi-step rollout
-    print("\n[7] 10-step agent rollout")
-    predict("reset")
-    total_reward = 0.0
-    for i in range(10):
-        r = json.loads(predict("auto"))
-        total_reward += r["reward"]
-        if r.get("done"):
-            print(f"    Episode ended at step {i+1}")
-            break
-    print(f"    OK — total reward: {total_reward:.4f}")
-
-    # 8. Verify human-readable fields exist
-    print("\n[8] Verify human-readable response fields")
-    predict("reset")
-    result = json.loads(predict("step"))
-    for field in ("next_topic", "difficulty", "engagement_score", "status"):
-        assert field in result, f"Missing field: {field}"
-    print(f"    OK — next_topic={result['next_topic']}, difficulty={result['difficulty']}, engagement={result['engagement_score']}")
-
-    print("\n" + "=" * 60)
-    print("ALL 8 TESTS PASSED")
-    print("=" * 60)
-    sys.exit(0)
+    asyncio.run(main())

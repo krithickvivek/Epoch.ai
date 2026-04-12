@@ -21,7 +21,14 @@ dependencies = [
     "uvicorn[standard]>=0.24.0",
     "pydantic>=2.0",
     "httpx>=0.25.0",
+    "openai>=1.0.0",
 ]
+
+[project.scripts]
+server = "uvicorn:main"
+
+[project.entry-points."openenv.envs"]
+curriculum_flow_env = "server.curriculum_environment:CurriculumEnvironment"
 
 [project.optional-dependencies]
 server = [

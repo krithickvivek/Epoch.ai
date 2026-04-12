@@ -6,18 +6,18 @@
   "observation_space": {
     "type": "Dict",
     "spaces": {
-      "mastery": "Box(40,)",
+      "mastery": "Box(66,)",
       "engagement": "Box(1,)",
       "recent_accuracy": "Box(10,)",
-      "time_since_review": "Box(40,)",
-      "current_topic": "Discrete(40)",
-      "unlocked_mask": "MultiBinary(40)"
+      "time_since_review": "Box(66,)",
+      "current_topic": "Discrete(66)",
+      "unlocked_mask": "MultiBinary(66)"
     }
   },
   "action_space": {
     "type": "Dict",
     "spaces": {
-      "topic": "Discrete(40)",
+      "topic": "Discrete(66)",
       "difficulty": "Discrete(5)",
       "assess": "Discrete(2)"
     }
@@ -27,7 +27,7 @@
   "student_archetypes": ["fast", "steady", "struggling", "bursty", "anxious"],
   "authors": ["krithickvivek"],
   "license": "Apache-2.0",
-  "paper_reference": "Ebbinghaus (1885) forgetting curve · Zone of Proximal Development (Vygotsky)",
+  "paper_reference": "Ebbinghaus (1885) forgetting curve, Zone of Proximal Development (Vygotsky)",
   "endpoints": {
     "predict": "/predict",
     "reset": "/reset",
