@@ -2343,10 +2343,11 @@ async def predict_endpoint(req: PredictRequest = None):
 
 @app.post("/api/reset")
 @app.post("/reset")
-async def api_reset(req: ResetRequest):
+async def api_reset(req: ResetRequest = None):
     async with env_lock:
-        options = {"archetype": req.archetype} if req.archetype else None
-        obs, info = env.reset(seed=req.seed, options=options)
+        options = {"archetype": req.archetype} if req and req.archetype else None
+        seed = req.seed if req else None
+        obs, info = env.reset(seed=seed, options=options)
         return {"observation": obs_to_json(obs), "info": info}
 
 @app.post("/api/step")
