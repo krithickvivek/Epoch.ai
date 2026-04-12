@@ -15,9 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Create writable directories for runtime data
-RUN mkdir -p /app/data /app/static/uploads /data && \
-    chown -R user:user /app /data
+# Create writable directories for runtime data (no /data — triggers HF volume mount)
+RUN mkdir -p /app/data /app/static/uploads && \
+    chown -R user:user /app
 
 USER user
 
