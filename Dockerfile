@@ -15,14 +15,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Create writable directories for runtime data and persistent storage
+# Create writable directories for runtime data
 RUN mkdir -p /app/data /app/static/uploads /data && \
     chown -R user:user /app /data
 
 USER user
-
-# HF Spaces persistent storage volume
-VOLUME /data
 
 # Environment variables
 ENV WORKERS=2
