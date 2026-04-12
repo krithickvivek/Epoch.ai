@@ -2380,7 +2380,7 @@ async def health():
     except Exception as e:
         db_info["error"] = str(e)
     return {
-        "status": "ok", "env": "CurriculumFlowENV", "version": "0.1.0",
+        "status": "healthy", "env": "CurriculumFlowENV", "version": "0.1.0",
         "step": env.step_count, "db": db_info,
         "space_id": os.getenv("SPACE_ID", "local"),
     }
@@ -2391,6 +2391,44 @@ async def get_spec():
     if spec_path.exists():
         return json.loads(spec_path.read_text())
     return {"error": "spec not found"}
+
+@app.get("/metadata")
+async def get_metadata():
+    return {
+        "name": "CurriculumFlowENV",
+        "description": "Multi-agent RL for adaptive learning path optimization. Three agents jointly personalize education for simulated students with Ebbinghaus forgetting curves.",
+        "version": "0.1.0",
+        "authors": ["krithickvivek"],
+        "license": "Apache-2.0",
+    }
+
+@app.get("/schema")
+async def get_schema():
+    return {
+        "action": {
+            "type": "Dict",
+            "spaces": {
+                "topic": "Discrete(66)",
+                "difficulty": "Discrete(5)",
+                "assess": "Discrete(2)",
+            },
+        },
+        "observation": {
+            "type": "Dict",
+            "spaces": {
+                "mastery": "Box(66,)",
+                "engagement": "Box(1,)",
+                "recent_accuracy": "Box(10,)",
+                "time_since_review": "Box(66,)",
+                "current_topic": "Discrete(66)",
+                "unlocked_mask": "MultiBinary(66)",
+            },
+        },
+        "state": {
+            "type": "Dict",
+            "fields": ["mastery", "engagement", "step", "archetype", "completion_rate"],
+        },
+    }
 
 
 # """ OPENENV WEBSOCKET ENDPOINT """
