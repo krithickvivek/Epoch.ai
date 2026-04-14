@@ -7,7 +7,7 @@
     <script>
     (function(){var t=localStorage.getItem('epoch-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);})();
     </script>
-    <link rel="stylesheet" href="/static/css/style.css?v=45">
+    <link rel="stylesheet" href="/static/css/style.css?v=46">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -1093,6 +1093,51 @@
         runInitSequence();
     }
 
+})();
+</script>
+
+<!-- Soft Login Prompt (appears after 3 questions) -->
+<div class="demo-save-prompt" id="demo-save-prompt">
+    <div class="demo-save-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+        </svg>
+    </div>
+    <div class="demo-save-text">
+        <div class="demo-save-title">Save your progress</div>
+        <div class="demo-save-sub">Unlock full personalized training with a free account</div>
+    </div>
+    <a href="/signup" class="demo-save-btn">Sign Up Free</a>
+    <button class="demo-save-dismiss" onclick="document.getElementById('demo-save-prompt').style.display='none';" aria-label="Dismiss">&times;</button>
+</div>
+
+<script>
+/* Soft login prompt — show after 3 questions answered */
+(function() {
+    var shown = false;
+    var observer = new MutationObserver(function() {
+        if (shown) return;
+        var el = document.getElementById('demo-correct');
+        var el2 = document.getElementById('demo-wrong');
+        if (!el || !el2) return;
+        var total = parseInt(el.textContent || 0) + parseInt(el2.textContent || 0);
+        if (total >= 3) {
+            shown = true;
+            var prompt = document.getElementById('demo-save-prompt');
+            if (prompt) {
+                setTimeout(function() { prompt.classList.add('visible'); }, 500);
+                /* Auto-hide after 15 seconds */
+                setTimeout(function() { prompt.classList.remove('visible'); }, 15500);
+            }
+            observer.disconnect();
+        }
+    });
+    var target = document.getElementById('demo-correct');
+    var target2 = document.getElementById('demo-wrong');
+    if (target) observer.observe(target, { childList: true, characterData: true, subtree: true });
+    if (target2) observer.observe(target2, { childList: true, characterData: true, subtree: true });
 })();
 </script>
 </body>

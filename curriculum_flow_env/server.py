@@ -2093,42 +2093,115 @@ async def interview_sim_submit(request: Request):
     company = form.get("company", "Generic")
     round_type = form.get("round_type", "technical")
     question_data = json.loads(form.get("question_data", "[]"))
+    answers_json = form.get("answers", "{}")
+    try:
+        answers_map = json.loads(answers_json) if answers_json else {}
+    except Exception:
+        answers_map = {}
 
     results = []
     total_score = 0
+    total_clarity = 0
+    total_correctness = 0
+    answered_count = 0
+
     for i, q in enumerate(question_data):
-        user_answer = form.get(f"answer_{i}", "").strip()
+        user_answer = answers_map.get(str(i), "").strip() or form.get(f"answer_{i}", "").strip()
         ideal = q.get("ideal_answer", "")
         if not user_answer:
             q_score = 0
+            clarity = 0
+            correctness = 0
+            q_feedback = "No answer provided. Review the ideal answer and try again."
         else:
             ideal_words = set(ideal.lower().split())
             user_words = set(user_answer.lower().split())
             overlap = len(ideal_words & user_words)
-            q_score = min(1.0, overlap / max(len(ideal_words) * 0.3, 1))
-        total_score += q_score
-        results.append({"question": q["question"], "your_answer": user_answer or "(No answer)",
-                        "ideal_answer": ideal, "score": round(q_score * 100), "type": q.get("type", "General")})
+            correctness = min(1.0, overlap / max(len(ideal_words) * 0.3, 1))
 
-    avg_score = total_score / max(len(question_data), 1)
+            # Clarity: based on answer length, structure, and coherence
+            word_count = len(user_answer.split())
+            has_structure = any(kw in user_answer.lower() for kw in
+                              ["because", "therefore", "first", "second", "for example",
+                               "step", "approach", "solution", "result", "situation"])
+            length_score = min(1.0, word_count / max(20, len(ideal.split()) * 0.4))
+            clarity = min(1.0, length_score * 0.5 + (0.3 if has_structure else 0.1) + correctness * 0.2)
+
+            q_score = correctness * 0.7 + clarity * 0.3
+            answered_count += 1
+            total_clarity += clarity
+            total_correctness += correctness
+
+            # Per-question feedback
+            if q_score >= 0.8:
+                q_feedback = "Strong answer with good coverage of key concepts."
+            elif q_score >= 0.6:
+                q_feedback = "Good attempt. Try to include more specific details and examples."
+            elif q_score >= 0.35:
+                q_feedback = "Partial coverage. Focus on the core concepts mentioned in the ideal answer."
+            else:
+                q_feedback = "Needs significant improvement. Study this topic and practice explaining it clearly."
+
+        total_score += q_score
+        results.append({
+            "question": q["question"], "your_answer": user_answer or "(No answer)",
+            "ideal_answer": ideal, "score": round(q_score * 100),
+            "type": q.get("type", "General"), "feedback": q_feedback,
+        })
+
+    num_q = max(len(question_data), 1)
+    avg_score = total_score / num_q
     score_pct = round(avg_score * 100)
+    clarity_pct = round((total_clarity / max(answered_count, 1)) * 100)
+    correctness_pct = round((total_correctness / max(answered_count, 1)) * 100)
     grade = "A" if score_pct >= 80 else "B" if score_pct >= 60 else "C" if score_pct >= 40 else "D"
 
+    # Adaptive difficulty label
+    difficulty_label = "Hard" if score_pct >= 75 else "Medium" if score_pct >= 40 else "Easy"
+
     if score_pct >= 80:
-        feedback = "Excellent! Strong knowledge and communication skills demonstrated."
+        feedback = "Excellent performance! You demonstrated strong knowledge and clear communication."
     elif score_pct >= 60:
-        feedback = "Good attempt. Add more specific examples and technical depth."
+        feedback = "Good attempt. Add more specific examples and deepen your technical explanations."
     elif score_pct >= 40:
-        feedback = "Needs improvement. Review core concepts and practice STAR method answers."
+        feedback = "Needs improvement. Review core concepts and practice structuring your answers clearly."
     else:
-        feedback = "Significant preparation needed. Start with fundamentals and practice answering aloud."
+        feedback = "Significant preparation needed. Focus on fundamentals and practice explaining concepts step by step."
+
+    # Strengths and improvements
+    strengths_list = []
+    improvements_list = []
+    high_scores = [r for r in results if r["score"] >= 70]
+    low_scores = [r for r in results if r["score"] < 50]
+
+    if high_scores:
+        strengths_list.append(f"Strong performance on {len(high_scores)} of {len(results)} questions")
+    if clarity_pct >= 60:
+        strengths_list.append("Clear and well-structured answers")
+    if answered_count == len(question_data):
+        strengths_list.append("Attempted all questions — good time management")
+    if correctness_pct >= 70:
+        strengths_list.append("Good technical accuracy in responses")
+
+    if low_scores:
+        improvements_list.append(f"Review {len(low_scores)} weak areas identified below")
+    if clarity_pct < 50:
+        improvements_list.append("Structure answers using frameworks (STAR, step-by-step)")
+    if correctness_pct < 50:
+        improvements_list.append("Deepen understanding of core concepts")
+    if answered_count < len(question_data):
+        improvements_list.append(f"Practice speed — {len(question_data) - answered_count} questions unanswered")
+    if not improvements_list:
+        improvements_list.append("Keep practicing to maintain and improve your skills")
 
     tips = {"technical": ["Think aloud during the interview", "Ask clarifying questions first",
                           "Discuss time/space complexity", "Start brute force, then optimize"],
             "hr": ["Use STAR method", "Research the company", "Prepare 5-6 stories", "Keep answers to 2-3 minutes"],
             "behavioral": ["Include measurable results", "Be specific, not generic",
-                           "Map answers to Leadership Principles for Amazon", "Practice with a timer"]
-            }.get(round_type, [])
+                           "Map answers to Leadership Principles for Amazon", "Practice with a timer"],
+            "system_design": ["Start with requirements clarification", "Draw high-level architecture first",
+                              "Discuss trade-offs explicitly", "Consider scalability and reliability"]
+            }.get(round_type, ["Practice regularly", "Review ideal answers", "Time yourself"])
 
     record_interview_session(user["id"], company, round_type,
                             json.dumps([q["question"] for q in question_data]),
@@ -2138,6 +2211,9 @@ async def interview_sim_submit(request: Request):
         "user": user, "active_page": "interview_sim", "mode": "results",
         "company": company, "round_type": round_type, "score": score_pct,
         "grade": grade, "results": results, "feedback": feedback, "tips": tips,
+        "clarity_score": clarity_pct, "correctness_score": correctness_pct,
+        "difficulty_label": difficulty_label,
+        "strengths_list": strengths_list, "improvements_list": improvements_list,
     })
 
 
