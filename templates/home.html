@@ -33,30 +33,30 @@
         <div class="ai-insights-grid ai-insights-grid-5">
             <div class="ai-insights-item">
                 <span class="ai-insights-label">Strength</span>
-                <span class="ai-insights-value" style="color:#22c55e;">{{ strength_name }}</span>
+                <span class="ai-insights-value" style="color:#22c55e;">{{ strength_name|default("Not enough data", true) }}</span>
             </div>
             <div class="ai-insights-item">
                 <span class="ai-insights-label">Weakness</span>
-                <span class="ai-insights-value" style="color:#ef4444;">{{ weakness_name }}</span>
+                <span class="ai-insights-value" style="color:#ef4444;">{{ weakness_name|default("No gaps detected", true) }}</span>
             </div>
             <div class="ai-insights-item">
                 <span class="ai-insights-label">Current Level</span>
-                <span class="ai-insights-value" style="color:var(--accent);">{{ current_level }}</span>
+                <span class="ai-insights-value" style="color:var(--accent);">{{ current_level|default("Easy", true) }}</span>
             </div>
             <div class="ai-insights-item">
                 <span class="ai-insights-label">AI Adaptations</span>
-                <span class="ai-insights-value" style="color:#f59e0b;">{{ ai_adaptations }}</span>
+                <span class="ai-insights-value" style="color:#f59e0b;">{{ ai_adaptations|default(0, true) }}</span>
             </div>
             <div class="ai-insights-item">
                 <span class="ai-insights-label">Topics Mastered</span>
-                <span class="ai-insights-value">{{ topics_mastered }} / 66</span>
+                <span class="ai-insights-value">{{ topics_mastered|default(0, true) }} / 66</span>
             </div>
         </div>
         <!-- #6 Micro AI signal -->
         <div class="ai-insights-footer">
             <span class="ai-insights-agents">
                 <span class="ai-insights-dot"></span>
-                3 agents running &middot; {{ unlocked_count }} topics unlocked &middot; {{ quizzes_taken }} quizzes analyzed
+                3 agents running &middot; {{ unlocked_count|default(66, true) }} topics unlocked &middot; Mastery: {{ total_mastery_pct|default(0, true) }}%
             </span>
         </div>
     </div>
