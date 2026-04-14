@@ -4,14 +4,51 @@
 {% block content %}
 <div class="container" style="padding: 24px 0;">
 
-  <!-- #6 EXPLANATION HEADER -->
+  <!-- EXPLANATION HEADER -->
   <div class="sim-hero">
     <div class="sim-hero-badge">
       <span class="ai-insights-dot"></span>
-      AI SIMULATION LAB
+      ADAPTIVE AI
     </div>
-    <h1 class="sim-hero-title">See how Epoch.ai adapts your learning using AI agents</h1>
-    <p class="sim-hero-sub">Three intelligent agents collaborate to optimize your learning path in real-time</p>
+    <h1 class="sim-hero-title">See How Epoch.ai Adapts Your Learning</h1>
+    <p class="sim-hero-sub">Our AI continuously analyzes your performance and adjusts difficulty, topics, and learning strategy in real-time.</p>
+  </div>
+
+  <!-- HOW IT WORKS — instant understanding in 5 seconds -->
+  <div class="sim-how-flow">
+    <div class="sim-flow-step">
+      <div class="sim-flow-icon" style="background:rgba(33,150,243,0.10);color:#2196f3;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="sim-flow-label">You answer questions</div>
+    </div>
+    <div class="sim-flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none"><path d="M1 6h16M14 1l5 5-5 5" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="sim-flow-step">
+      <div class="sim-flow-icon" style="background:rgba(255,152,0,0.10);color:#ff9800;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+      </div>
+      <div class="sim-flow-label">AI analyzes performance</div>
+    </div>
+    <div class="sim-flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none"><path d="M1 6h16M14 1l5 5-5 5" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="sim-flow-step">
+      <div class="sim-flow-icon" style="background:rgba(76,175,80,0.10);color:#4caf50;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="sim-flow-label">System adapts to you</div>
+    </div>
+    <div class="sim-flow-arrow">
+      <svg width="20" height="12" viewBox="0 0 20 12" fill="none"><path d="M1 6h16M14 1l5 5-5 5" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="sim-flow-step">
+      <div class="sim-flow-icon" style="background:rgba(34,197,94,0.10);color:#22c55e;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="sim-flow-label">You learn faster</div>
+    </div>
   </div>
 
   <!-- #10 SIMPLE / ADVANCED TOGGLE -->
@@ -25,16 +62,17 @@
        ═══════════════════════════════════════════ -->
   <div id="sim-simple-view">
 
-    <!-- Agent Cards — human-readable -->
+    <!-- 3 AI Agents — clear, no jargon -->
+    <div class="sim-section-label" style="margin-bottom:14px;">Three AI Agents Working Together</div>
     <div class="sim-agents-simple">
       <div class="sim-agent-card">
         <div class="sim-agent-icon" style="background:rgba(33,150,243,0.10);color:#2196f3;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
         <h3>Topic Sequencer</h3>
-        <p>Scans all 66 topics and picks the one where you'll learn the most right now.</p>
+        <p>Selects the next topic based on your weak areas</p>
         <div class="sim-agent-decision" id="simple-agent-topic">
-          <span class="sim-agent-decided">Waiting...</span>
+          <span class="sim-agent-decided">Waiting to start...</span>
         </div>
       </div>
       <div class="sim-agent-card">
@@ -42,9 +80,9 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
         </div>
         <h3>Difficulty Adapter</h3>
-        <p>Adjusts question difficulty to keep you challenged but not overwhelmed.</p>
+        <p>Adjusts question difficulty based on your performance</p>
         <div class="sim-agent-decision" id="simple-agent-diff">
-          <span class="sim-agent-decided">Waiting...</span>
+          <span class="sim-agent-decided">Waiting to start...</span>
         </div>
       </div>
       <div class="sim-agent-card">
@@ -52,21 +90,25 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         </div>
         <h3>Assessment Timer</h3>
-        <p>Decides when to quiz you for maximum long-term memory retention.</p>
+        <p>Decides when to review or test your understanding</p>
         <div class="sim-agent-decision" id="simple-agent-assess">
-          <span class="sim-agent-decided">Waiting...</span>
+          <span class="sim-agent-decided">Waiting to start...</span>
         </div>
       </div>
     </div>
 
-    <!-- #8 WHAT'S HAPPENING RIGHT NOW -->
+    <!-- WHAT'S HAPPENING RIGHT NOW -->
     <div class="sim-insight-box" id="sim-insight-box">
       <div class="sim-insight-header">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
         <span class="sim-insight-title">What's Happening Right Now</span>
+        <span class="sim-insight-live" id="sim-insight-live" style="display:none;"><span class="ai-insights-dot"></span>LIVE</span>
       </div>
       <div id="sim-insight-text" class="sim-insight-content">
-        <div class="sim-insight-placeholder">Run an episode to see AI decisions in action...</div>
+        <div class="sim-insight-placeholder">
+          Press <strong>Run Episode</strong> below to watch the AI adapt a simulated student's learning path in real-time.
+          <br><span style="font-size:12px;margin-top:4px;display:inline-block;">You'll see messages like: "AI detected strong performance &rarr; increasing difficulty"</span>
+        </div>
       </div>
     </div>
 
@@ -239,56 +281,56 @@
       </div>
       <div id="reward-bars" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
         <div class="reward-component" data-key="milestone_bonus">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Milestone Bonus <span class="sim-metric-hint" title="Awarded when you master a new topic">&#9432;</span></div>
+          <div class="reward-label">Milestone Bonus<span class="reward-hint">Mastering a new topic</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
           </div>
           <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
         </div>
         <div class="reward-component" data-key="learning_gain">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Learning Gain <span class="sim-metric-hint" title="Measures how much new knowledge you acquired">&#9432;</span></div>
+          <div class="reward-label">Learning Gain<span class="reward-hint">Improvement in understanding</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
           </div>
           <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
         </div>
         <div class="reward-component" data-key="stretch_reward">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Stretch Challenge <span class="sim-metric-hint" title="Bonus for successfully tackling harder questions">&#9432;</span></div>
+          <div class="reward-label">Stretch Challenge<span class="reward-hint">Tackling harder questions</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
           </div>
           <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
         </div>
         <div class="reward-component" data-key="assessment_reward">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Assessment <span class="sim-metric-hint" title="Rewards well-timed quizzes that reinforce memory">&#9432;</span></div>
+          <div class="reward-label">Assessment<span class="reward-hint">Well-timed review quizzes</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
           </div>
           <div class="reward-val" style="font-size:12px;font-weight:600;color:var(--accent);margin-top:2px;">+0.0</div>
         </div>
         <div class="reward-component" data-key="dropout_penalty">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Dropout Risk <span class="sim-metric-hint" title="Penalty when student engagement drops too low">&#9432;</span></div>
+          <div class="reward-label">Dropout Risk<span class="reward-hint">Chance of losing focus</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:#E74C3C;border-radius:999px;transition:width 0.5s;"></div>
           </div>
           <div class="reward-val" style="font-size:12px;font-weight:600;color:#E74C3C;margin-top:2px;">0.0</div>
         </div>
         <div class="reward-component" data-key="opportunity_cost">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Opportunity Cost <span class="sim-metric-hint" title="Penalty for repeating mastered topics instead of new ones">&#9432;</span></div>
+          <div class="reward-label">Opportunity Cost<span class="reward-hint">Repeating mastered topics</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:#E74C3C;border-radius:999px;transition:width 0.5s;"></div>
           </div>
           <div class="reward-val" style="font-size:12px;font-weight:600;color:#E74C3C;margin-top:2px;">0.0</div>
         </div>
         <div class="reward-component" data-key="retention_penalty">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Retention Penalty <span class="sim-metric-hint" title="Penalty when previously learned topics are forgotten">&#9432;</span></div>
+          <div class="reward-label">Retention<span class="reward-hint">How well you remember concepts</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:#E74C3C;border-radius:999px;transition:width 0.5s;"></div>
           </div>
           <div class="reward-val" style="font-size:12px;font-weight:600;color:#E74C3C;margin-top:2px;">0.0</div>
         </div>
         <div class="reward-component" data-key="completion_bonus">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Completion Bonus <span class="sim-metric-hint" title="Large reward for mastering all topics">&#9432;</span></div>
+          <div class="reward-label">Completion Bonus<span class="reward-hint">Mastering all topics</span></div>
           <div style="height:8px;background:var(--progress-track);border-radius:999px;overflow:hidden;">
             <div class="reward-fill" style="height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width 0.5s;"></div>
           </div>
@@ -312,8 +354,8 @@
     <div class="sim-connection-inner">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
       <div>
-        <div class="sim-connection-title">This simulation powers your real learning experience</div>
-        <div class="sim-connection-sub">The same 3 agents run behind the scenes in <a href="/demo">Demo Mode</a> and your <a href="/">Dashboard</a>, adapting your curriculum in real-time.</div>
+        <div class="sim-connection-title">This system powers your adaptive learning experience in Demo Mode and Dashboard</div>
+        <div class="sim-connection-sub">The same 3 AI agents run behind every question you answer in <a href="/demo">Demo Mode</a> and your <a href="/">Dashboard</a>.</div>
       </div>
       <a href="/demo" class="btn-primary btn-sm" style="white-space:nowrap;padding:8px 18px;font-size:12px;margin-left:auto;">Try Demo &rarr;</a>
     </div>
@@ -506,10 +548,13 @@ function generateInsight(step, prevStep, mastery) {
 
 function updateInsightBox(insights) {
   var box = document.getElementById('sim-insight-text');
+  var liveEl = document.getElementById('sim-insight-live');
   if (!insights.length) {
-    box.innerHTML = '<div class="sim-insight-placeholder">Run an episode to see AI decisions in action...</div>';
+    if (liveEl) liveEl.style.display = 'none';
+    box.innerHTML = '<div class="sim-insight-placeholder">Press <strong>Run Episode</strong> below to watch the AI adapt a simulated student\'s learning path in real-time.<br><span style="font-size:12px;margin-top:4px;display:inline-block;">You\'ll see messages like: "AI detected strong performance &rarr; increasing difficulty"</span></div>';
     return;
   }
+  if (liveEl) liveEl.style.display = '';
   var html = '';
   var shown = insights.slice(-4).reverse();
   for (var i = 0; i < shown.length; i++) {
@@ -570,9 +615,11 @@ async function resetSimulation() {
   document.getElementById('simple-mastery-bars').innerHTML = '<div style="color:var(--text-muted);font-size:13px;font-style:italic;padding:12px 0;">No mastery data yet — run an episode to see progress</div>';
   document.getElementById('simple-timeline').innerHTML = '';
   document.getElementById('sim-timeline-simple').style.display = 'none';
-  document.getElementById('simple-agent-topic').innerHTML = '<span class="sim-agent-decided">Waiting...</span>';
-  document.getElementById('simple-agent-diff').innerHTML = '<span class="sim-agent-decided">Waiting...</span>';
-  document.getElementById('simple-agent-assess').innerHTML = '<span class="sim-agent-decided">Waiting...</span>';
+  document.getElementById('simple-agent-topic').innerHTML = '<span class="sim-agent-decided">Waiting to start...</span>';
+  document.getElementById('simple-agent-diff').innerHTML = '<span class="sim-agent-decided">Waiting to start...</span>';
+  document.getElementById('simple-agent-assess').innerHTML = '<span class="sim-agent-decided">Waiting to start...</span>';
+  var liveEl = document.getElementById('sim-insight-live');
+  if (liveEl) liveEl.style.display = 'none';
   updateInsightBox([]);
 
   // Advanced view
