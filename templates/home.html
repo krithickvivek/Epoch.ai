@@ -2,35 +2,95 @@
 {% block title %}Home — Epoch.ai{% endblock %}
 {% block content %}
 <div class="container">
+
+    <!-- #1 UPDATED HERO TEXT -->
     <div class="dash-welcome">
         <span class="dw-name">Welcome back, {{ user.name }}</span>
         <span class="dw-divider"></span>
-        <span class="dw-quote">Every time you arrive, everything is different.</span>
+        <span class="dw-quote">Your learning path is adapting based on your performance</span>
+    </div>
+    <p class="dash-welcome-sub">AI continuously adjusts difficulty, topics, and recommendations in real-time</p>
+
+    <!-- #2 AI INSIGHTS CARD (highest priority) -->
+    <div class="ai-insights-card reveal">
+        <div class="ai-insights-header">
+            <div class="ai-insights-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+            </div>
+            <div>
+                <div class="ai-insights-title">AI Insights</div>
+                <div class="ai-insights-sub">Your learning path is being optimized based on your performance</div>
+            </div>
+            <div class="ai-insights-badge">
+                <span class="ai-insights-dot"></span>
+                AI Active
+            </div>
+        </div>
+        <div class="ai-insights-grid">
+            <div class="ai-insights-item">
+                <span class="ai-insights-label">Strength</span>
+                <span class="ai-insights-value" style="color:#22c55e;">{{ strength_name }}</span>
+            </div>
+            <div class="ai-insights-item">
+                <span class="ai-insights-label">Weakness</span>
+                <span class="ai-insights-value" style="color:#ef4444;">{{ weakness_name }}</span>
+            </div>
+            <div class="ai-insights-item">
+                <span class="ai-insights-label">Current Level</span>
+                <span class="ai-insights-value" style="color:var(--accent);">{{ current_level }}</span>
+            </div>
+            <div class="ai-insights-item">
+                <span class="ai-insights-label">Topics Mastered</span>
+                <span class="ai-insights-value">{{ topics_mastered }} / 66</span>
+            </div>
+        </div>
+        <!-- #6 Micro AI signal -->
+        <div class="ai-insights-footer">
+            <span class="ai-insights-agents">
+                <span class="ai-insights-dot"></span>
+                3 agents running &middot; {{ unlocked_count }} topics unlocked &middot; {{ quizzes_taken }} quizzes analyzed
+            </span>
+        </div>
     </div>
 
-    <div class="home-cards">
+    <!-- #4 RECOMMENDED NEXT STEP -->
+    {% if rec_topic_name %}
+    <div class="ai-rec-next reveal" style="margin-top:14px;">
+        <div class="ai-rec-next-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <div>
+                <div class="ai-rec-next-title">Recommended Next Step</div>
+                <div class="ai-rec-next-topic">Practice <strong>{{ rec_topic_name }}</strong> — {{ rec_reason }}</div>
+            </div>
+        </div>
+        <a href="/learning/study?topic={{ rec_topic_id }}" class="btn-primary btn-sm" style="white-space:nowrap;padding:8px 18px;font-size:12px;">Go &rarr;</a>
+    </div>
+    {% endif %}
+
+    <!-- #3 MAIN ACTION CARDS (renamed) -->
+    <div class="home-cards" style="margin-top:18px;">
         <a href="/learning" class="home-card reveal reveal-delay-1">
             <div class="home-card-icon" style="background:var(--cobalt-muted);">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </div>
-            <h3>Start Learning</h3>
-            <p>Choose a topic and let AI guide your study path</p>
+            <h3>Resume Adaptive Training</h3>
+            <p>Continue from where AI left off</p>
             <span class="card-arrow">&rarr;</span>
         </a>
         <a href="/quiz" class="home-card reveal reveal-delay-2">
             <div class="home-card-icon" style="background:var(--cobalt-muted);">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <h3>Take a Quiz</h3>
-            <p>Test your knowledge with adaptive assessments</p>
+            <h3>Adaptive Quiz</h3>
+            <p>AI-powered assessments that match your level</p>
             <span class="card-arrow">&rarr;</span>
         </a>
         <a href="/growth" class="home-card reveal reveal-delay-3">
             <div class="home-card-icon" style="background:var(--cobalt-muted);">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
-            <h3>Growth Analysis</h3>
-            <p>Track your progress and see improvement trends</p>
+            <h3>AI Growth Analysis</h3>
+            <p>Track AI-driven progress and improvement trends</p>
             <span class="card-arrow">&rarr;</span>
         </a>
         <a href="/profile" class="home-card reveal reveal-delay-4">
@@ -43,7 +103,7 @@
         </a>
     </div>
 
-    <!-- New Feature Quick Access -->
+    <!-- Placement Preparation (renamed Interview Sim) -->
     <div class="section reveal" style="margin-top:24px;">
         <h2 class="section-title">Placement Preparation</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
@@ -79,8 +139,8 @@
                 <div class="home-card-icon" style="background:rgba(156,39,176,0.1);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9c27b0" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
-                <h3 style="font-size:0.95rem;">Interview Sim</h3>
-                <p style="font-size:0.8rem;">Practice mock interviews</p>
+                <h3 style="font-size:0.95rem;">Adaptive Interview</h3>
+                <p style="font-size:0.8rem;">AI-powered mock interviews</p>
             </a>
         </div>
     </div>
@@ -163,7 +223,7 @@
         </div>
     </div>
 
-    <!-- AI Agent Recommendation Panel -->
+    <!-- AI Agent Recommendation Panel (populated via API) -->
     <div id="home-ai-rec" class="ai-rec-panel reveal" style="display:none;">
         <div class="ai-rec-header">
             <div class="ai-rec-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg></div>
@@ -188,7 +248,7 @@
         const a = data.agents;
         const el = document.getElementById('home-ai-rec');
         el.style.display = 'block';
-        document.getElementById('ai-rec-sub').textContent = `Overall mastery: ${data.total_mastery}% · ${data.unlocked_count} topics unlocked`;
+        document.getElementById('ai-rec-sub').textContent = `Overall mastery: ${data.total_mastery}% \u00b7 ${data.unlocked_count} topics unlocked`;
         document.getElementById('ai-rec-agents').innerHTML = `
             <div class="ai-rec-agent">
                 <div class="ai-rec-agent-dot" style="background:var(--accent);"></div>
@@ -216,7 +276,13 @@
             </div>`;
         const cta = document.getElementById('ai-rec-action');
         cta.href = '/learning/study?topic=' + a.topic_sequencer.action;
-        cta.textContent = a.assessment_timer.action === 1 ? `Take Quiz: ${a.topic_sequencer.topic_name} →` : `Study: ${a.topic_sequencer.topic_name} →`;
+        cta.textContent = a.assessment_timer.action === 1 ? `Take Quiz: ${a.topic_sequencer.topic_name} \u2192` : `Study: ${a.topic_sequencer.topic_name} \u2192`;
+
+        // #6 — Update "last session" micro signal if data available
+        var footer = document.querySelector('.ai-insights-footer .ai-insights-agents');
+        if (footer && data.total_mastery > 0) {
+            footer.innerHTML = '<span class="ai-insights-dot"></span> 3 agents running \u00b7 ' + data.unlocked_count + ' topics unlocked \u00b7 Mastery: ' + data.total_mastery + '%';
+        }
     } catch(e) {}
 })();
 /* ── Carousel (absolute-positioned slides) ── */
@@ -247,10 +313,8 @@
             if (i === current) {
                 s.setAttribute('data-state', 'active');
             } else if (i === prev && prev !== current) {
-                // slide out in direction of travel
                 s.setAttribute('data-state', idx > prev ? 'prev' : 'next');
             } else {
-                // pre-position off-screen on the incoming side
                 s.setAttribute('data-state', 'next');
                 s.style.transition = 'none';
                 requestAnimationFrame(function(){ s.style.transition = ''; });
@@ -296,7 +360,7 @@
     var el = document.getElementById('motivational-quote');
     var au = document.getElementById('quote-author');
     if(el){ el.textContent = q.t; }
-    if(au){ au.textContent = '— '+q.a; }
+    if(au){ au.textContent = '\u2014 '+q.a; }
 })();
 </script>
 {% endblock %}

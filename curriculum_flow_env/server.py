@@ -637,9 +637,71 @@ async def home_page(request: Request):
                 "color": group_color,
             })
 
+    # Build AI insights for the dashboard
+    mastery_dict = {}
+    for row in progress:
+        tid = int(row["topic_id"]) if isinstance(row["topic_id"], str) else row["topic_id"]
+        mastery_dict[tid] = row["mastery_level"]
+    topics_mastered = sum(1 for v in mastery_dict.values() if v >= MASTERY_THRESHOLD)
+    total_mastery_pct = round(sum(mastery_dict.values()) / NUM_TOPICS * 100, 1) if mastery_dict else 0
+
+    # Strength / weakness
+    best_topic_id = max(mastery_dict, key=mastery_dict.get) if mastery_dict else None
+    worst_topic_id = None
+    if mastery_dict:
+        active_topics = {k: v for k, v in mastery_dict.items() if v > 0 and v < MASTERY_THRESHOLD}
+        if active_topics:
+            worst_topic_id = min(active_topics, key=active_topics.get)
+
+    strength_name = TOPIC_DISPLAY_NAMES.get(best_topic_id, "Not enough data") if best_topic_id is not None and mastery_dict.get(best_topic_id, 0) > 0 else "Not enough data"
+    weakness_name = TOPIC_DISPLAY_NAMES.get(worst_topic_id, "No gaps detected") if worst_topic_id is not None else "No gaps detected"
+
+    # Determine level from average mastery
+    avg_m = total_mastery_pct / 100
+    if avg_m >= 0.7:
+        current_level = "Advanced"
+    elif avg_m >= 0.4:
+        current_level = "Intermediate"
+    elif avg_m >= 0.15:
+        current_level = "Elementary"
+    else:
+        current_level = "Beginner"
+
+    # Quiz history stats
+    quiz_hist = get_quiz_history(user["id"])
+    quizzes_taken = len(quiz_hist)
+
+    # Recommended next topic (lightweight — full recommendation via API)
+    tg = _get_topic_graph_data()
+    unlocked = tg.get_unlocked_topics(mastery_dict)
+    rec_topic_id = None
+    rec_topic_name = ""
+    rec_reason = ""
+    if unlocked:
+        # Pick lowest mastery among unlocked
+        rec_topic_id = min(unlocked, key=lambda t: mastery_dict.get(t, 0.0))
+        rec_topic_name = TOPIC_DISPLAY_NAMES.get(rec_topic_id, "")
+        rec_m = mastery_dict.get(rec_topic_id, 0.0)
+        if rec_m == 0:
+            rec_reason = "New topic — start building foundations"
+        elif rec_m < 0.3:
+            rec_reason = "Low mastery — needs more practice"
+        else:
+            rec_reason = "Strengthen before moving on"
+
     return render(request, "home.html", {
         "user": user, "active_page": "home",
         "recent_topics": recent_topics,
+        "strength_name": strength_name,
+        "weakness_name": weakness_name,
+        "current_level": current_level,
+        "total_mastery_pct": total_mastery_pct,
+        "topics_mastered": topics_mastered,
+        "quizzes_taken": quizzes_taken,
+        "rec_topic_id": rec_topic_id,
+        "rec_topic_name": rec_topic_name,
+        "rec_reason": rec_reason,
+        "unlocked_count": len(unlocked),
     })
 
 
