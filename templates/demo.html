@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epoch.ai — Live AI Demo</title>
+    <script>
+    (function(){var t=localStorage.getItem('epoch-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);})();
+    </script>
+    <link rel="stylesheet" href="/static/css/style.css?v=11">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="grain" style="background:var(--bg-base);overflow-x:hidden;">
+
+<!-- Top Bar -->
+<nav class="demo-topbar">
+    <div class="demo-topbar-inner">
+        <a href="/" class="nav-logo" style="gap:8px;">
+            <span class="nav-logo-mark"><svg width="14" height="14" viewBox="0 0 22 22" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,18 6,13 10,15 15,8 20,4"/><polyline points="17,4 20,4 20,7"/></svg></span>
+            <span style="color:#fff;font-size:16px;font-weight:700;">Epoch<span style="color:var(--accent);">.ai</span></span>
+        </a>
+        <div class="demo-mode-badge">
+            <span class="demo-pulse"></span>
+            LIVE AI DEMO
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" style="color:#fff;border-color:rgba(255,255,255,0.2);"></button>
+            <a href="/signup" class="btn-primary btn-sm" style="padding:8px 18px;font-size:12px;">Sign Up Free &rarr;</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Loading / Initialization Screen -->
+<div id="demo-init" class="demo-init">
+    <div class="demo-init-content">
+        <div class="demo-init-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10" opacity="0.2"/>
+                <path d="M12 2a10 10 0 0 1 10 10" class="demo-init-spinner"/>
+            </svg>
+        </div>
+        <h2 class="demo-init-title">Initializing AI Agents</h2>
+        <div class="demo-init-steps">
+            <div class="demo-init-step" id="init-step-1">
+                <span class="demo-init-check">&#10003;</span>
+                <span>Loading Topic Sequencer...</span>
+            </div>
+            <div class="demo-init-step" id="init-step-2">
+                <span class="demo-init-check">&#10003;</span>
+                <span>Calibrating Difficulty Adapter...</span>
+            </div>
+            <div class="demo-init-step" id="init-step-3">
+                <span class="demo-init-check">&#10003;</span>
+                <span>Activating Assessment Timer...</span>
+            </div>
+        </div>
+        <p class="demo-init-sub">No account needed. Experience AI-powered learning now.</p>
+    </div>
+</div>
+
+<!-- Main Demo Layout -->
+<div id="demo-main" class="demo-layout" style="display:none;">
+
+    <!-- LEFT: AI Agent Panel -->
+    <aside class="demo-sidebar-left">
+        <div class="demo-panel">
+            <div class="demo-panel-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <span>AI Agents — Live</span>
+                <span class="demo-live-dot"></span>
+            </div>
+
+            <!-- Agent 1: Topic Sequencer -->
+            <div class="demo-agent-card" id="agent-topic">
+                <div class="demo-agent-header">
+                    <div class="demo-agent-dot" style="background:#2196f3;"></div>
+                    <span class="demo-agent-name">Topic Sequencer</span>
+                </div>
+                <div class="demo-agent-body">
+                    <div class="demo-agent-decision" id="agent-topic-decision">Analyzing knowledge gaps...</div>
+                    <div class="demo-agent-reason" id="agent-topic-reason">Scanning 66 topics across 8 categories</div>
+                </div>
+            </div>
+
+            <!-- Agent 2: Difficulty Adapter -->
+            <div class="demo-agent-card" id="agent-diff">
+                <div class="demo-agent-header">
+                    <div class="demo-agent-dot" style="background:#ff9800;"></div>
+                    <span class="demo-agent-name">Difficulty Adapter</span>
+                </div>
+                <div class="demo-agent-body">
+                    <div class="demo-agent-decision" id="agent-diff-decision">Setting initial difficulty...</div>
+                    <div class="demo-agent-reason" id="agent-diff-reason">Zone of proximal development: calibrating</div>
+                </div>
+                <div class="demo-diff-meter">
+                    <div class="demo-diff-track">
+                        <div class="demo-diff-fill" id="diff-fill" style="width:40%;"></div>
+                    </div>
+                    <div class="demo-diff-labels">
+                        <span>Easy</span><span>Medium</span><span>Hard</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent 3: Assessment Timer -->
+            <div class="demo-agent-card" id="agent-assess">
+                <div class="demo-agent-header">
+                    <div class="demo-agent-dot" style="background:#4caf50;"></div>
+                    <span class="demo-agent-name">Assessment Timer</span>
+                </div>
+                <div class="demo-agent-body">
+                    <div class="demo-agent-decision" id="agent-assess-decision">Monitoring retention...</div>
+                    <div class="demo-agent-reason" id="agent-assess-reason">Ebbinghaus forgetting curve: active</div>
+                </div>
+                <div class="demo-assess-bar">
+                    <div class="demo-assess-fill" id="assess-fill" style="width:0%;"></div>
+                </div>
+                <div class="demo-assess-label" id="assess-label">Next assessment: after 3 questions</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CENTER: Quiz Area -->
+    <main class="demo-center">
+        <!-- Question Counter + Topic Badge -->
+        <div class="demo-question-header">
+            <div class="demo-topic-badge" id="demo-topic-badge">Quantitative Aptitude</div>
+            <div class="demo-question-count" id="demo-q-count">Question <span id="demo-q-num">1</span> of <span id="demo-q-total">10</span></div>
+        </div>
+
+        <!-- Difficulty Indicator -->
+        <div class="demo-difficulty-indicator">
+            <span class="demo-diff-label">Difficulty:</span>
+            <div class="demo-diff-dots" id="demo-diff-dots">
+                <span class="demo-diff-dot active"></span>
+                <span class="demo-diff-dot active"></span>
+                <span class="demo-diff-dot"></span>
+                <span class="demo-diff-dot"></span>
+                <span class="demo-diff-dot"></span>
+            </div>
+            <span class="demo-diff-text" id="demo-diff-text">Easy</span>
+        </div>
+
+        <!-- Question Card -->
+        <div class="demo-question-card" id="demo-question-card">
+            <div class="demo-question-text" id="demo-question-text">Loading question...</div>
+            <div class="demo-options" id="demo-options">
+                <!-- Options injected by JS -->
+            </div>
+        </div>
+
+        <!-- Feedback Area -->
+        <div class="demo-feedback" id="demo-feedback" style="display:none;">
+            <div class="demo-feedback-icon" id="demo-feedback-icon"></div>
+            <div class="demo-feedback-text" id="demo-feedback-text"></div>
+            <div class="demo-feedback-explain" id="demo-feedback-explain"></div>
+            <button class="btn-primary btn-sm demo-next-btn" id="demo-next-btn" onclick="DemoApp.nextQuestion()">Next Question &rarr;</button>
+        </div>
+
+        <!-- AI Thinking Animation (shown between questions) -->
+        <div class="demo-ai-thinking" id="demo-ai-thinking" style="display:none;">
+            <div class="demo-thinking-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <span>AI is adapting...</span>
+        </div>
+
+        <!-- Demo Complete -->
+        <div class="demo-complete" id="demo-complete" style="display:none;">
+            <div class="demo-complete-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <h2>Demo Complete!</h2>
+            <div class="demo-complete-stats">
+                <div class="demo-stat-item">
+                    <span class="demo-stat-num" id="final-score">0</span>
+                    <span class="demo-stat-label">Score</span>
+                </div>
+                <div class="demo-stat-item">
+                    <span class="demo-stat-num" id="final-accuracy">0%</span>
+                    <span class="demo-stat-label">Accuracy</span>
+                </div>
+                <div class="demo-stat-item">
+                    <span class="demo-stat-num" id="final-topics">0</span>
+                    <span class="demo-stat-label">Topics</span>
+                </div>
+                <div class="demo-stat-item">
+                    <span class="demo-stat-num" id="final-adaptations">0</span>
+                    <span class="demo-stat-label">AI Adaptations</span>
+                </div>
+            </div>
+            <p class="demo-complete-msg">The AI adapted <strong id="final-adapt-count">0</strong> times to optimize your learning path. Imagine this across <strong>66 topics</strong> over weeks of preparation.</p>
+            <div class="demo-complete-cta">
+                <a href="/signup" class="btn-primary btn-lg">Create Free Account &rarr;</a>
+                <button class="btn-ghost btn-sm" onclick="DemoApp.restart()">Try Again</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- RIGHT: Progress Panel -->
+    <aside class="demo-sidebar-right">
+        <div class="demo-panel">
+            <div class="demo-panel-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                <span>Your Progress</span>
+            </div>
+
+            <!-- Score -->
+            <div class="demo-score-ring">
+                <svg viewBox="0 0 100 100" class="demo-ring-svg">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="var(--progress-track)" stroke-width="6"/>
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="var(--accent)" stroke-width="6"
+                            stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round"
+                            id="demo-score-circle" transform="rotate(-90 50 50)"/>
+                </svg>
+                <div class="demo-ring-label">
+                    <span class="demo-ring-number" id="demo-score-pct">0%</span>
+                    <span class="demo-ring-sub">accuracy</span>
+                </div>
+            </div>
+
+            <!-- Score Counter -->
+            <div class="demo-score-counter">
+                <span id="demo-correct">0</span> correct &middot; <span id="demo-wrong">0</span> wrong
+            </div>
+
+            <!-- Topics Covered -->
+            <div class="demo-topics-section">
+                <div class="demo-panel-subheader">Topics Covered</div>
+                <div id="demo-topics-list" class="demo-topics-list">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Mastery Bars -->
+            <div class="demo-mastery-section">
+                <div class="demo-panel-subheader">Mastery Estimate</div>
+                <div id="demo-mastery-bars" class="demo-mastery-bars">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Adaptation Log -->
+            <div class="demo-log-section">
+                <div class="demo-panel-subheader">AI Decisions</div>
+                <div id="demo-log" class="demo-log">
+                    <div class="demo-log-entry">
+                        <span class="demo-log-icon">&#9656;</span>
+                        <span>Session initialized</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    // ── QUESTION BANK (curated for demo) ──
+    var DEMO_QUESTIONS = {
+        "Quantitative Aptitude": {
+            color: "#2196f3",
+            questions: [
+                { q: "If the cost price of 20 articles is equal to the selling price of 16 articles, what is the profit percentage?", opts: ["20%","25%","30%","16%"], correct: 1, diff: 1, explain: "CP of 20 = SP of 16. Profit = (20-16)/16 × 100 = 25%" },
+                { q: "A train 150m long passes a pole in 15 seconds. What is its speed in km/hr?", opts: ["36 km/hr","40 km/hr","32 km/hr","45 km/hr"], correct: 0, diff: 2, explain: "Speed = 150/15 = 10 m/s = 10 × 18/5 = 36 km/hr" },
+                { q: "Two pipes can fill a tank in 12 and 15 hours respectively. If both are opened together, how long to fill the tank?", opts: ["6 hr 40 min","7 hr","5 hr 30 min","8 hr"], correct: 0, diff: 2, explain: "Combined rate = 1/12 + 1/15 = 9/60 = 3/20. Time = 20/3 = 6 hr 40 min" },
+                { q: "What is the compound interest on Rs.10,000 at 10% per annum for 2 years?", opts: ["Rs.2,000","Rs.2,100","Rs.1,900","Rs.2,200"], correct: 1, diff: 3, explain: "CI = 10000[(1+0.1)² - 1] = 10000[1.21-1] = Rs.2,100" },
+                { q: "In how many ways can 5 people be seated in a row?", opts: ["25","60","120","720"], correct: 2, diff: 3, explain: "5! = 5×4×3×2×1 = 120 ways" },
+                { q: "The average of 5 numbers is 27. If one number is excluded, the average becomes 25. What is the excluded number?", opts: ["35","30","32","37"], correct: 0, diff: 1, explain: "Sum of 5 numbers = 135. Sum of 4 = 100. Excluded = 135-100 = 35" }
+            ]
+        },
+        "Logical Reasoning": {
+            color: "#ff9800",
+            questions: [
+                { q: "If MACHINE is coded as 19-7-9-14-15-20-11, then ROCKET is coded as?", opts: ["24-21-9-17-11-26","18-15-3-11-5-20","24-15-9-17-11-26","18-21-3-17-5-20"], correct: 0, diff: 2, explain: "Each letter is replaced by its position + 6: R(18+6), O(15+6), C(3+6)..." },
+                { q: "Pointing to a photograph, Arun said 'She is the daughter of my grandfather's only son.' How is the person in the photo related to Arun?", opts: ["Sister","Daughter","Mother","Cousin"], correct: 0, diff: 1, explain: "Grandfather's only son = Arun's father. His daughter = Arun's sister." },
+                { q: "All roses are flowers. Some flowers are red. Which conclusion follows?", opts: ["All roses are red","Some roses are red","No definite conclusion about roses being red","All red things are roses"], correct: 2, diff: 2, explain: "The middle term 'flowers' is not distributed, so no definite conclusion follows." },
+                { q: "What comes next: 2, 6, 12, 20, 30, ?", opts: ["40","42","36","44"], correct: 1, diff: 3, explain: "Differences: 4,6,8,10,12. Pattern: n(n+1). Next = 6×7 = 42" },
+                { q: "If South-East becomes North, what does North-West become?", opts: ["South","East","North-East","South-West"], correct: 0, diff: 3, explain: "Rotation of 135° clockwise. NW rotated 135° CW = South." }
+            ]
+        },
+        "Data Structures": {
+            color: "#f44336",
+            questions: [
+                { q: "What is the time complexity of searching in a balanced Binary Search Tree?", opts: ["O(n)","O(log n)","O(n log n)","O(1)"], correct: 1, diff: 2, explain: "In a balanced BST, height = log n, so search takes O(log n)." },
+                { q: "Which data structure is used for BFS traversal of a graph?", opts: ["Stack","Queue","Priority Queue","Linked List"], correct: 1, diff: 1, explain: "BFS uses a Queue (FIFO) to process nodes level by level." },
+                { q: "What is the worst-case time complexity of QuickSort?", opts: ["O(n log n)","O(n)","O(n²)","O(log n)"], correct: 2, diff: 2, explain: "When pivot selection is poor (already sorted array), QuickSort degrades to O(n²)." },
+                { q: "In a max-heap with n elements, where is the minimum element?", opts: ["Root node","Any internal node","One of the leaf nodes","Second level"], correct: 2, diff: 3, explain: "In a max-heap, the minimum is always at one of the leaf nodes." },
+                { q: "Which of these is NOT a self-balancing BST?", opts: ["AVL Tree","Red-Black Tree","B-Tree","Binary Search Tree"], correct: 3, diff: 3, explain: "A plain BST has no balancing mechanism. AVL, Red-Black, and B-Trees self-balance." }
+            ]
+        },
+        "Operating Systems": {
+            color: "#9c27b0",
+            questions: [
+                { q: "Which scheduling algorithm gives the minimum average waiting time?", opts: ["FCFS","SJF","Round Robin","Priority"], correct: 1, diff: 2, explain: "SJF (Shortest Job First) is proven to give minimum average waiting time." },
+                { q: "What are the necessary conditions for deadlock? (Coffman conditions)", opts: ["2 conditions","3 conditions","4 conditions","5 conditions"], correct: 2, diff: 1, explain: "Mutual exclusion, Hold & Wait, No preemption, Circular wait — 4 conditions." },
+                { q: "In virtual memory, what is a page fault?", opts: ["A hardware failure","When a referenced page is not in main memory","A segmentation error","When page table overflows"], correct: 1, diff: 2, explain: "A page fault occurs when a process accesses a page not currently in RAM." },
+                { q: "Which page replacement algorithm suffers from Belady's anomaly?", opts: ["LRU","Optimal","FIFO","LFU"], correct: 2, diff: 3, explain: "FIFO can have more page faults with more frames — Belady's anomaly." }
+            ]
+        },
+        "DBMS": {
+            color: "#00bcd4",
+            questions: [
+                { q: "Which normal form eliminates transitive dependencies?", opts: ["1NF","2NF","3NF","BCNF"], correct: 2, diff: 2, explain: "3NF eliminates transitive dependencies (non-key → non-key via another non-key)." },
+                { q: "What does ACID stand for in database transactions?", opts: ["Atomicity, Consistency, Isolation, Durability","Association, Consistency, Integrity, Durability","Atomicity, Completeness, Isolation, Dependency","None of these"], correct: 0, diff: 1, explain: "ACID = Atomicity, Consistency, Isolation, Durability — core transaction properties." },
+                { q: "Which type of JOIN returns all rows from both tables, matching where possible?", opts: ["INNER JOIN","LEFT JOIN","FULL OUTER JOIN","CROSS JOIN"], correct: 2, diff: 2, explain: "FULL OUTER JOIN returns all rows from both tables with NULLs where no match exists." },
+                { q: "A B+ Tree index is preferred over B-Tree in databases because:", opts: ["Faster insertion","All keys are in leaves, enabling range queries","Less memory usage","Simpler implementation"], correct: 1, diff: 3, explain: "B+ Trees store all keys in leaf nodes linked together, making range queries efficient." }
+            ]
+        }
+    };
+
+    var TOPIC_ORDER = ["Quantitative Aptitude","Logical Reasoning","Data Structures","Operating Systems","DBMS"];
+
+    // ── DEMO STATE ──
+    var state = {
+        currentTopicIdx: 0,
+        currentQuestionIdx: 0,
+        difficulty: 2,          // 1-5 scale
+        score: 0,
+        correct: 0,
+        wrong: 0,
+        totalAnswered: 0,
+        totalQuestions: 10,
+        recentAccuracy: [],     // last 3 answers (true/false)
+        topicMastery: {},       // topic -> 0-1
+        topicQuestions: {},      // topic -> count answered
+        adaptationCount: 0,
+        assessmentCounter: 0,
+        isAssessmentMode: false,
+        phase: 'init',          // init, playing, feedback, thinking, complete
+        questionQueue: [],      // pre-built queue
+    };
+
+    // ── BUILD QUESTION QUEUE ──
+    function buildQueue() {
+        var queue = [];
+        // Pick questions across topics, cycling through them
+        var topicQIdx = {};
+        TOPIC_ORDER.forEach(function(t) { topicQIdx[t] = 0; });
+
+        for (var i = 0; i < state.totalQuestions; i++) {
+            var topicName = TOPIC_ORDER[i % TOPIC_ORDER.length];
+            var topicData = DEMO_QUESTIONS[topicName];
+            var qIdx = topicQIdx[topicName] % topicData.questions.length;
+            var q = Object.assign({}, topicData.questions[qIdx]);
+            q.topic = topicName;
+            q.topicColor = topicData.color;
+            queue.push(q);
+            topicQIdx[topicName]++;
+        }
+        return queue;
+    }
+
+    // ── INITIALIZATION SEQUENCE ──
+    function runInitSequence() {
+        var steps = ['init-step-1', 'init-step-2', 'init-step-3'];
+        var delay = 600;
+        steps.forEach(function(id, i) {
+            setTimeout(function() {
+                var el = document.getElementById(id);
+                if (el) el.classList.add('done');
+            }, delay * (i + 1));
+        });
+
+        setTimeout(function() {
+            document.getElementById('demo-init').classList.add('fade-out');
+            setTimeout(function() {
+                document.getElementById('demo-init').style.display = 'none';
+                document.getElementById('demo-main').style.display = 'flex';
+                state.phase = 'playing';
+                state.questionQueue = buildQueue();
+                showQuestion();
+            }, 400);
+        }, delay * steps.length + 800);
+    }
+
+    // ── SHOW QUESTION ──
+    function showQuestion() {
+        if (state.totalAnswered >= state.totalQuestions) {
+            showComplete();
+            return;
+        }
+
+        var q = state.questionQueue[state.totalAnswered];
+        if (!q) { showComplete(); return; }
+
+        // Update topic badge
+        var badge = document.getElementById('demo-topic-badge');
+        badge.textContent = q.topic;
+        badge.style.borderColor = q.topicColor;
+        badge.style.color = q.topicColor;
+
+        // Update question counter
+        document.getElementById('demo-q-num').textContent = state.totalAnswered + 1;
+        document.getElementById('demo-q-total').textContent = state.totalQuestions;
+
+        // Update difficulty dots
+        updateDifficultyDisplay(state.difficulty);
+
+        // Update question text
+        document.getElementById('demo-question-text').textContent = q.q;
+
+        // Build options
+        var optionsHtml = '';
+        var markers = ['A', 'B', 'C', 'D'];
+        q.opts.forEach(function(opt, i) {
+            optionsHtml += '<div class="demo-option" data-idx="' + i + '" onclick="DemoApp.selectOption(this, ' + i + ')">' +
+                '<span class="demo-option-marker">' + markers[i] + '</span>' +
+                '<span class="demo-option-text">' + escapeHtml(opt) + '</span>' +
+                '</div>';
+        });
+        document.getElementById('demo-options').innerHTML = optionsHtml;
+
+        // Hide feedback, show question
+        document.getElementById('demo-feedback').style.display = 'none';
+        document.getElementById('demo-ai-thinking').style.display = 'none';
+        document.getElementById('demo-question-card').style.display = 'block';
+        document.getElementById('demo-complete').style.display = 'none';
+
+        // Update agent panel
+        updateAgentDecisions(q);
+
+        // Animate card in
+        var card = document.getElementById('demo-question-card');
+        card.classList.remove('slide-in');
+        void card.offsetWidth;
+        card.classList.add('slide-in');
+    }
+
+    // ── SELECT OPTION ──
+    function selectOption(el, idx) {
+        if (state.phase !== 'playing') return;
+        state.phase = 'feedback';
+
+        var q = state.questionQueue[state.totalAnswered];
+        var isCorrect = idx === q.correct;
+
+        // Mark all options
+        var options = document.querySelectorAll('.demo-option');
+        options.forEach(function(opt) {
+            var optIdx = parseInt(opt.dataset.idx);
+            opt.style.pointerEvents = 'none';
+            if (optIdx === q.correct) {
+                opt.classList.add('correct');
+            } else if (optIdx === idx && !isCorrect) {
+                opt.classList.add('wrong');
+            }
+        });
+
+        // Update state
+        if (isCorrect) {
+            state.correct++;
+            state.score += state.difficulty * 10;
+        } else {
+            state.wrong++;
+        }
+        state.totalAnswered++;
+        state.recentAccuracy.push(isCorrect);
+        if (state.recentAccuracy.length > 3) state.recentAccuracy.shift();
+
+        // Update topic mastery
+        var topicName = q.topic;
+        if (!state.topicMastery[topicName]) state.topicMastery[topicName] = 0;
+        if (!state.topicQuestions[topicName]) state.topicQuestions[topicName] = 0;
+        state.topicQuestions[topicName]++;
+        if (isCorrect) {
+            state.topicMastery[topicName] = Math.min(1, state.topicMastery[topicName] + 0.25);
+        } else {
+            state.topicMastery[topicName] = Math.max(0, state.topicMastery[topicName] - 0.1);
+        }
+
+        // Assessment counter
+        state.assessmentCounter++;
+
+        // Show feedback
+        showFeedback(isCorrect, q);
+
+        // Update progress panel
+        updateProgress();
+
+        // Adapt difficulty
+        adaptDifficulty();
+    }
+
+    // ── SHOW FEEDBACK ──
+    function showFeedback(isCorrect, q) {
+        var feedback = document.getElementById('demo-feedback');
+        var icon = document.getElementById('demo-feedback-icon');
+        var text = document.getElementById('demo-feedback-text');
+        var explain = document.getElementById('demo-feedback-explain');
+
+        icon.innerHTML = isCorrect
+            ? '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+        text.textContent = isCorrect ? 'Correct!' : 'Not quite.';
+        text.style.color = isCorrect ? '#22c55e' : '#ef4444';
+        explain.textContent = q.explain;
+
+        feedback.style.display = 'block';
+        feedback.classList.remove('slide-in');
+        void feedback.offsetWidth;
+        feedback.classList.add('slide-in');
+    }
+
+    // ── NEXT QUESTION ──
+    function nextQuestion() {
+        if (state.totalAnswered >= state.totalQuestions) {
+            showComplete();
+            return;
+        }
+
+        state.phase = 'thinking';
+        document.getElementById('demo-feedback').style.display = 'none';
+        document.getElementById('demo-question-card').style.display = 'none';
+        document.getElementById('demo-ai-thinking').style.display = 'flex';
+
+        // Simulate AI thinking
+        setTimeout(function() {
+            document.getElementById('demo-ai-thinking').style.display = 'none';
+            state.phase = 'playing';
+            showQuestion();
+        }, 800 + Math.random() * 400);
+    }
+
+    // ── ADAPT DIFFICULTY ──
+    function adaptDifficulty() {
+        var oldDiff = state.difficulty;
+        var recentCorrect = state.recentAccuracy.filter(function(x) { return x; }).length;
+        var recentTotal = state.recentAccuracy.length;
+
+        if (recentTotal >= 2) {
+            var accuracy = recentCorrect / recentTotal;
+            if (accuracy >= 0.8 && state.difficulty < 5) {
+                state.difficulty++;
+            } else if (accuracy <= 0.33 && state.difficulty > 1) {
+                state.difficulty--;
+            }
+        }
+
+        if (oldDiff !== state.difficulty) {
+            state.adaptationCount++;
+            var direction = state.difficulty > oldDiff ? 'increased' : 'decreased';
+            var diffEl = document.getElementById('agent-diff-decision');
+            diffEl.textContent = 'Difficulty ' + direction + ': Level ' + oldDiff + ' → ' + state.difficulty;
+            diffEl.classList.add('highlight');
+            setTimeout(function() { diffEl.classList.remove('highlight'); }, 1500);
+
+            document.getElementById('agent-diff-reason').textContent =
+                direction === 'increased'
+                    ? 'High accuracy detected — pushing to challenge zone'
+                    : 'Struggling detected — easing to build confidence';
+
+            addLog('Difficulty ' + direction + ' to Level ' + state.difficulty);
+        }
+
+        // Update difficulty meter
+        var pct = ((state.difficulty - 1) / 4) * 100;
+        document.getElementById('diff-fill').style.width = pct + '%';
+
+        // Update assessment bar
+        var assessPct = Math.min(100, (state.assessmentCounter / 3) * 100);
+        document.getElementById('assess-fill').style.width = assessPct + '%';
+        if (state.assessmentCounter >= 3) {
+            document.getElementById('agent-assess-decision').textContent = 'Assessment triggered!';
+            document.getElementById('agent-assess-reason').textContent = 'Optimal retention window reached';
+            document.getElementById('assess-label').textContent = 'Assessment mode active';
+            state.assessmentCounter = 0;
+            addLog('Assessment cycle triggered');
+            state.adaptationCount++;
+        } else {
+            document.getElementById('assess-label').textContent = 'Next assessment: after ' + (3 - state.assessmentCounter) + ' questions';
+        }
+    }
+
+    // ── UPDATE AGENT DECISIONS ──
+    function updateAgentDecisions(q) {
+        // Topic Sequencer
+        var weakest = getWeakestTopic();
+        document.getElementById('agent-topic-decision').textContent = 'Selected: ' + q.topic;
+        document.getElementById('agent-topic-reason').textContent = weakest
+            ? 'Weakest area: ' + weakest + ' — prioritizing for mastery'
+            : 'Cycling through topics for balanced coverage';
+
+        // Difficulty Adapter
+        var diffLabels = ['', 'Easy', 'Easy-Medium', 'Medium', 'Medium-Hard', 'Hard'];
+        document.getElementById('agent-diff-decision').textContent = 'Level ' + state.difficulty + ' — ' + diffLabels[state.difficulty];
+
+        var acc = state.totalAnswered > 0 ? Math.round((state.correct / state.totalAnswered) * 100) : 0;
+        document.getElementById('agent-diff-reason').textContent = 'Current accuracy: ' + acc + '% — ' +
+            (acc > 70 ? 'in flow zone' : acc > 40 ? 'building foundations' : 'strengthening basics');
+
+        // Assessment Timer
+        if (!state.isAssessmentMode) {
+            document.getElementById('agent-assess-decision').textContent = 'Tracking retention patterns';
+            document.getElementById('agent-assess-reason').textContent = 'Ebbinghaus curve: monitoring decay rate';
+        }
+    }
+
+    // ── UPDATE DIFFICULTY DISPLAY ──
+    function updateDifficultyDisplay(level) {
+        var dots = document.querySelectorAll('#demo-diff-dots .demo-diff-dot');
+        dots.forEach(function(dot, i) {
+            dot.classList.toggle('active', i < level);
+        });
+        var labels = ['', 'Easy', 'Easy-Med', 'Medium', 'Med-Hard', 'Hard'];
+        document.getElementById('demo-diff-text').textContent = labels[level] || 'Medium';
+    }
+
+    // ── UPDATE PROGRESS PANEL ──
+    function updateProgress() {
+        // Score ring
+        var accuracy = state.totalAnswered > 0 ? Math.round((state.correct / state.totalAnswered) * 100) : 0;
+        document.getElementById('demo-score-pct').textContent = accuracy + '%';
+        var circle = document.getElementById('demo-score-circle');
+        var circumference = 264;
+        var offset = circumference - (accuracy / 100) * circumference;
+        circle.style.strokeDashoffset = offset;
+
+        // Counters
+        document.getElementById('demo-correct').textContent = state.correct;
+        document.getElementById('demo-wrong').textContent = state.wrong;
+
+        // Topics list
+        var topicsHtml = '';
+        Object.keys(state.topicQuestions).forEach(function(topic) {
+            var color = DEMO_QUESTIONS[topic] ? DEMO_QUESTIONS[topic].color : '#888';
+            topicsHtml += '<div class="demo-topic-item">' +
+                '<span class="demo-topic-dot" style="background:' + color + ';"></span>' +
+                '<span>' + topic + '</span>' +
+                '<span class="demo-topic-count">' + state.topicQuestions[topic] + 'q</span>' +
+                '</div>';
+        });
+        document.getElementById('demo-topics-list').innerHTML = topicsHtml;
+
+        // Mastery bars
+        var masteryHtml = '';
+        Object.keys(state.topicMastery).forEach(function(topic) {
+            var m = Math.round(state.topicMastery[topic] * 100);
+            var color = DEMO_QUESTIONS[topic] ? DEMO_QUESTIONS[topic].color : '#888';
+            masteryHtml += '<div class="demo-mastery-item">' +
+                '<div class="demo-mastery-label">' + topic.split(' ')[0] + '</div>' +
+                '<div class="demo-mastery-track"><div class="demo-mastery-fill" style="width:' + m + '%;background:' + color + ';"></div></div>' +
+                '<div class="demo-mastery-pct">' + m + '%</div>' +
+                '</div>';
+        });
+        document.getElementById('demo-mastery-bars').innerHTML = masteryHtml;
+    }
+
+    // ── SHOW COMPLETE ──
+    function showComplete() {
+        state.phase = 'complete';
+        document.getElementById('demo-question-card').style.display = 'none';
+        document.getElementById('demo-feedback').style.display = 'none';
+        document.getElementById('demo-ai-thinking').style.display = 'none';
+
+        var accuracy = state.totalAnswered > 0 ? Math.round((state.correct / state.totalAnswered) * 100) : 0;
+        document.getElementById('final-score').textContent = state.score;
+        document.getElementById('final-accuracy').textContent = accuracy + '%';
+        document.getElementById('final-topics').textContent = Object.keys(state.topicQuestions).length;
+        document.getElementById('final-adaptations').textContent = state.adaptationCount;
+        document.getElementById('final-adapt-count').textContent = state.adaptationCount;
+
+        document.getElementById('demo-complete').style.display = 'block';
+    }
+
+    // ── RESTART ──
+    function restart() {
+        state.currentTopicIdx = 0;
+        state.currentQuestionIdx = 0;
+        state.difficulty = 2;
+        state.score = 0;
+        state.correct = 0;
+        state.wrong = 0;
+        state.totalAnswered = 0;
+        state.recentAccuracy = [];
+        state.topicMastery = {};
+        state.topicQuestions = {};
+        state.adaptationCount = 0;
+        state.assessmentCounter = 0;
+        state.phase = 'playing';
+        state.questionQueue = buildQueue();
+
+        document.getElementById('demo-complete').style.display = 'none';
+        document.getElementById('demo-log').innerHTML = '<div class="demo-log-entry"><span class="demo-log-icon">&#9656;</span><span>Session restarted</span></div>';
+
+        // Reset progress
+        document.getElementById('demo-score-circle').style.strokeDashoffset = 264;
+        document.getElementById('demo-score-pct').textContent = '0%';
+        document.getElementById('demo-correct').textContent = '0';
+        document.getElementById('demo-wrong').textContent = '0';
+        document.getElementById('demo-topics-list').innerHTML = '';
+        document.getElementById('demo-mastery-bars').innerHTML = '';
+        document.getElementById('diff-fill').style.width = '40%';
+        document.getElementById('assess-fill').style.width = '0%';
+
+        showQuestion();
+    }
+
+    // ── HELPERS ──
+    function getWeakestTopic() {
+        var weakest = null, minMastery = 999;
+        Object.keys(state.topicMastery).forEach(function(t) {
+            if (state.topicMastery[t] < minMastery) {
+                minMastery = state.topicMastery[t];
+                weakest = t;
+            }
+        });
+        return weakest;
+    }
+
+    function addLog(msg) {
+        var log = document.getElementById('demo-log');
+        var entry = document.createElement('div');
+        entry.className = 'demo-log-entry new';
+        entry.innerHTML = '<span class="demo-log-icon">&#9656;</span><span>' + escapeHtml(msg) + '</span>';
+        log.insertBefore(entry, log.firstChild);
+        // Keep max 8 entries
+        while (log.children.length > 8) {
+            log.removeChild(log.lastChild);
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // ── PUBLIC API ──
+    window.DemoApp = {
+        selectOption: selectOption,
+        nextQuestion: nextQuestion,
+        restart: restart,
+    };
+
+    // ── START ──
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runInitSequence);
+    } else {
+        runInitSequence();
+    }
+
+})();
+</script>
+</body>
+</html>

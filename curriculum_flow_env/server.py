@@ -523,6 +523,12 @@ async def landing_page(request: Request):
     return render(request, "landing.html")
 
 
+@app.get("/demo", response_class=HTMLResponse)
+async def demo_page(request: Request):
+    """Interactive AI demo — no login required."""
+    return render(request, "demo.html")
+
+
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     user = get_current_user(request)

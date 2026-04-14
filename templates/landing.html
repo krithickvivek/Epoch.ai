@@ -7,7 +7,7 @@
     <script>
     (function(){var t=localStorage.getItem('epoch-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);})();
     </script>
-    <link rel="stylesheet" href="/static/css/style.css?v=10">
+    <link rel="stylesheet" href="/static/css/style.css?v=11">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -39,9 +39,10 @@
             </p>
 
             <div class="landing-cta">
-                <a href="/signup" class="btn-primary btn-lg">Start your first epoch &rarr;</a>
-                <a href="#how-it-works" class="btn-ghost btn-lg">Explore the curriculum</a>
+                <a href="/demo" class="btn-primary btn-lg" style="background:var(--gradient-accent);color:#fff;">Try the AI Demo &rarr;</a>
+                <a href="/signup" class="btn-ghost btn-lg">Create Free Account</a>
             </div>
+            <p class="hero-demo-note">No sign-up required. Experience adaptive AI in 60 seconds.</p>
 
             <div class="landing-stats">
                 <div class="landing-stat">
@@ -81,6 +82,50 @@
         <span class="kw">return</span> student.accuracy > <span class="num">0.7</span></code></pre>
             </div>
         </div>
+
+        <!-- Intelligence Showcase -->
+        <section class="landing-section reveal" id="intelligence-showcase">
+            <h2 class="section-title" style="text-align:center;font-size:24px;letter-spacing:-0.02em;">Intelligence in Action</h2>
+            <p style="text-align:center;color:var(--text-secondary);max-width:560px;margin:0 auto 28px;font-size:14px;">Three specialized AI agents work together in real-time to optimize your learning path.</p>
+            <div class="showcase-agents">
+                <div class="showcase-agent reveal reveal-delay-1">
+                    <div class="showcase-agent-icon" style="background:rgba(33,150,243,0.1);color:#2196f3;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    </div>
+                    <h3>Topic Sequencer</h3>
+                    <p>Scans all 66 topics and selects the one with the highest learning potential based on your current mastery gaps.</p>
+                    <div class="showcase-agent-live">
+                        <span class="showcase-pulse" style="background:#2196f3;"></span>
+                        <span class="showcase-live-text">Live: Selecting next topic...</span>
+                    </div>
+                </div>
+                <div class="showcase-agent reveal reveal-delay-2">
+                    <div class="showcase-agent-icon" style="background:rgba(255,152,0,0.1);color:#ff9800;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    </div>
+                    <h3>Difficulty Adapter</h3>
+                    <p>Adjusts question complexity to your zone of proximal development. Too easy? It ramps up. Struggling? It scales back.</p>
+                    <div class="showcase-agent-live">
+                        <span class="showcase-pulse" style="background:#ff9800;"></span>
+                        <span class="showcase-live-text">Live: Calibrating difficulty...</span>
+                    </div>
+                </div>
+                <div class="showcase-agent reveal reveal-delay-3">
+                    <div class="showcase-agent-icon" style="background:rgba(76,175,80,0.1);color:#4caf50;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Assessment Timer</h3>
+                    <p>Uses Ebbinghaus forgetting curves to trigger quizzes at the exact moment when testing maximizes long-term retention.</p>
+                    <div class="showcase-agent-live">
+                        <span class="showcase-pulse" style="background:#4caf50;"></span>
+                        <span class="showcase-live-text">Live: Monitoring retention...</span>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:center;margin-top:24px;">
+                <a href="/demo" class="btn-ghost btn-sm" style="font-size:13px;">See them work live &rarr;</a>
+            </div>
+        </section>
 
         <section id="how-it-works" class="landing-section reveal">
             <h2 class="section-title" style="text-align:center;font-size:24px;letter-spacing:-0.02em;">How It Works</h2>
@@ -180,10 +225,43 @@
             </div>
         </section>
 
+        <!-- RL Explanation Section -->
+        <section class="landing-section reveal" id="how-ai-learns">
+            <h2 class="section-title" style="text-align:center;font-size:24px;letter-spacing:-0.02em;">How This AI Learns</h2>
+            <div class="rl-explanation">
+                <div class="rl-step reveal reveal-delay-1">
+                    <div class="rl-step-num">1</div>
+                    <div class="rl-step-body">
+                        <h4>Observe</h4>
+                        <p>The environment captures your mastery levels, engagement, time-since-review, and accuracy across all 66 topics.</p>
+                    </div>
+                </div>
+                <div class="rl-connector"></div>
+                <div class="rl-step reveal reveal-delay-2">
+                    <div class="rl-step-num">2</div>
+                    <div class="rl-step-body">
+                        <h4>Decide</h4>
+                        <p>Three RL agents simultaneously choose the optimal topic, difficulty, and assessment timing using learned policies.</p>
+                    </div>
+                </div>
+                <div class="rl-connector"></div>
+                <div class="rl-step reveal reveal-delay-3">
+                    <div class="rl-step-num">3</div>
+                    <div class="rl-step-body">
+                        <h4>Act & Learn</h4>
+                        <p>After you answer, the environment returns a reward signal. Agents update their strategies to maximize your long-term mastery.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="landing-section cta-section reveal">
             <h2>Ready to ace your placements?</h2>
             <p>Join Epoch.ai and let AI optimize your preparation.</p>
-            <a href="/signup" class="btn-primary btn-lg">Create Free Account &rarr;</a>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                <a href="/demo" class="btn-primary btn-lg" style="background:var(--gradient-accent);color:#fff;">Try the Demo First &rarr;</a>
+                <a href="/signup" class="btn-ghost btn-lg">Create Free Account</a>
+            </div>
         </section>
 
         <footer class="landing-footer">
