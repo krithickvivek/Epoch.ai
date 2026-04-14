@@ -7,7 +7,7 @@
     <script>
     (function(){var t=localStorage.getItem('epoch-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);})();
     </script>
-    <link rel="stylesheet" href="/static/css/style.css?v=12">
+    <link rel="stylesheet" href="/static/css/style.css?v=45">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -145,7 +145,7 @@
             <span class="demo-adapt-msg" id="demo-adapt-msg"></span>
         </div>
 
-        <!-- #5 MINI LEARNING PROFILE -->
+        <!-- LEARNING PROFILE -->
         <div class="demo-learning-profile" id="demo-learning-profile">
             <div class="demo-lp-title">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -164,7 +164,36 @@
                     <span class="demo-lp-label">Level</span>
                     <span class="demo-lp-value demo-lp-level" id="lp-level">Beginner</span>
                 </div>
+                <div class="demo-lp-row">
+                    <span class="demo-lp-label">Accuracy</span>
+                    <span class="demo-lp-value" id="lp-accuracy" style="color:var(--accent);">0%</span>
+                </div>
             </div>
+        </div>
+
+        <!-- HOW THIS AI LEARNS — RL cycle -->
+        <div class="demo-rl-panel" id="demo-rl-panel">
+            <div class="demo-rl-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5-4 6.5V18H9v-2.5C7 14 5 12 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+                How This AI Learns
+            </div>
+            <div class="demo-rl-cycle">
+                <div class="demo-rl-node">
+                    <div class="demo-rl-node-label">STATE</div>
+                    <div class="demo-rl-node-value" id="rl-state">Accuracy: 0%</div>
+                </div>
+                <div class="demo-rl-arrow">&rarr;</div>
+                <div class="demo-rl-node">
+                    <div class="demo-rl-node-label">ACTION</div>
+                    <div class="demo-rl-node-value" id="rl-action">Difficulty: Level 2</div>
+                </div>
+                <div class="demo-rl-arrow">&rarr;</div>
+                <div class="demo-rl-node">
+                    <div class="demo-rl-node-label">REWARD</div>
+                    <div class="demo-rl-node-value" id="rl-reward">Waiting...</div>
+                </div>
+            </div>
+            <div class="demo-rl-message" id="rl-message">Answer a question to see the AI adapt in real-time</div>
         </div>
 
         <!-- Question Counter + Topic Badge -->
@@ -202,6 +231,18 @@
             </div>
             <div class="demo-feedback-sections" id="demo-feedback-sections">
                 <!-- Filled by JS: why wrong / correct concept / AI next action -->
+            </div>
+            <!-- Feedback Loop -->
+            <div class="demo-helpful" id="demo-helpful">
+                <span class="demo-helpful-label">Was this explanation helpful?</span>
+                <button class="demo-helpful-btn demo-helpful-yes" onclick="DemoApp.handleFeedback(true)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Yes
+                </button>
+                <button class="demo-helpful-btn demo-helpful-no" onclick="DemoApp.handleFeedback(false)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    No
+                </button>
             </div>
             <button class="btn-primary btn-sm demo-next-btn" id="demo-next-btn" onclick="DemoApp.nextQuestion()">Next Question &rarr;</button>
         </div>
@@ -387,6 +428,10 @@
         isAssessmentMode: false,
         phase: 'init',          // init, playing, feedback, thinking, complete
         questionQueue: [],      // pre-built queue
+        helpfulYes: 0,
+        helpfulNo: 0,
+        explanationDepth: 'standard',  // brief, standard, detailed
+        lastRLMessage: '',
     };
 
     // ── BUILD QUESTION QUEUE ──
@@ -555,17 +600,27 @@
         text.textContent = isCorrect ? 'Correct!' : 'Incorrect';
         text.style.color = isCorrect ? '#22c55e' : '#ef4444';
 
-        // Build structured feedback
+        // Build structured feedback — depth adapts based on user feedback
         var html = '';
         if (!isCorrect) {
+            var wrongExplain = state.explanationDepth === 'detailed'
+                ? 'Your selection was not the correct answer. The correct option uses a different approach — review the concept below carefully.'
+                : 'Your selection was not the correct answer.';
             html += '<div class="demo-fb-row demo-fb-wrong">' +
                 '<span class="demo-fb-icon">&#10060;</span>' +
-                '<div><strong>Why it\'s wrong:</strong> Your selection was not the correct answer.</div>' +
+                '<div><strong>Why it\'s wrong:</strong> ' + wrongExplain + '</div>' +
                 '</div>';
+        }
+
+        var conceptText = escapeHtml(q.explain);
+        if (state.explanationDepth === 'detailed') {
+            conceptText += ' <em style="color:var(--text-muted);font-size:12px;">(Detailed mode — based on your feedback)</em>';
+        } else if (state.explanationDepth === 'brief' && isCorrect) {
+            conceptText = escapeHtml(q.explain.split('.')[0]) + '.';
         }
         html += '<div class="demo-fb-row demo-fb-concept">' +
             '<span class="demo-fb-icon">&#9989;</span>' +
-            '<div><strong>Concept:</strong> ' + escapeHtml(q.explain) + '</div>' +
+            '<div><strong>Concept:</strong> ' + conceptText + '</div>' +
             '</div>';
 
         // AI next action
@@ -576,6 +631,14 @@
             '</div>';
 
         sections.innerHTML = html;
+
+        // Reset helpful buttons
+        var helpfulEl = document.getElementById('demo-helpful');
+        helpfulEl.innerHTML = '<span class="demo-helpful-label">Was this explanation helpful?</span>' +
+            '<button class="demo-helpful-btn demo-helpful-yes" onclick="DemoApp.handleFeedback(true)">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Yes</button>' +
+            '<button class="demo-helpful-btn demo-helpful-no" onclick="DemoApp.handleFeedback(false)">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No</button>';
 
         feedback.style.display = 'block';
         feedback.classList.remove('slide-in');
@@ -683,8 +746,9 @@
             document.getElementById('assess-label').textContent = 'Next assessment: after ' + (3 - state.assessmentCounter) + ' questions';
         }
 
-        // #5 — Update learning profile
+        // Update learning profile + RL panel
         updateLearningProfile();
+        updateRLPanel(null, false);
     }
 
     // ── #2 INLINE ADAPTATION BANNER ──
@@ -746,6 +810,98 @@
         else if (state.difficulty >= 3 && acc > 0.5) level = 'Intermediate';
         else if (state.difficulty >= 2 && acc > 0.4) level = 'Elementary';
         levelEl.textContent = level;
+    }
+
+    // ── FEEDBACK LOOP — "Was this helpful?" ──
+    function handleFeedback(helpful) {
+        if (helpful) {
+            state.helpfulYes++;
+        } else {
+            state.helpfulNo++;
+        }
+
+        // Adjust explanation depth based on feedback pattern
+        var total = state.helpfulYes + state.helpfulNo;
+        if (total >= 2) {
+            var helpfulRate = state.helpfulYes / total;
+            if (helpfulRate < 0.4) {
+                state.explanationDepth = 'detailed';
+            } else if (helpfulRate > 0.8) {
+                state.explanationDepth = 'brief';
+            } else {
+                state.explanationDepth = 'standard';
+            }
+        }
+
+        // Visual feedback on button
+        var helpfulEl = document.getElementById('demo-helpful');
+        var depthMsg = state.explanationDepth === 'detailed'
+            ? 'AI noted — providing more detailed explanations'
+            : state.explanationDepth === 'brief'
+            ? 'AI noted — keeping explanations concise'
+            : 'AI noted — thanks for the feedback';
+        helpfulEl.innerHTML = '<span class="demo-helpful-thanks">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> ' +
+            depthMsg + '</span>';
+
+        addLog('Explanation depth: ' + state.explanationDepth);
+        state.adaptationCount++;
+
+        // Update RL panel
+        updateRLPanel(null, true);
+    }
+
+    // ── UPDATE RL PANEL ──
+    function updateRLPanel(q, afterFeedback) {
+        var acc = state.totalAnswered > 0 ? Math.round((state.correct / state.totalAnswered) * 100) : 0;
+        var diffLabels = ['', 'Easy', 'Easy-Med', 'Medium', 'Med-Hard', 'Hard'];
+
+        // State
+        document.getElementById('rl-state').textContent = 'Accuracy: ' + acc + '%';
+
+        // Action
+        var actionText = 'Difficulty: ' + diffLabels[state.difficulty];
+        if (afterFeedback && state.explanationDepth !== 'standard') {
+            actionText = 'Depth: ' + state.explanationDepth;
+        }
+        document.getElementById('rl-action').textContent = actionText;
+
+        // Reward
+        if (state.totalAnswered > 0) {
+            var last = state.recentAccuracy[state.recentAccuracy.length - 1];
+            document.getElementById('rl-reward').textContent = last ? '+1 Correct' : '-1 Incorrect';
+            document.getElementById('rl-reward').style.color = last ? '#22c55e' : '#ef4444';
+        }
+
+        // Update accuracy in learning profile
+        document.getElementById('lp-accuracy').textContent = acc + '%';
+
+        // RL Message
+        var msg = generateRLMessage(afterFeedback);
+        document.getElementById('rl-message').textContent = msg;
+        state.lastRLMessage = msg;
+    }
+
+    function generateRLMessage(afterFeedback) {
+        if (afterFeedback) {
+            if (state.explanationDepth === 'detailed') return 'Providing more detailed explanations based on your feedback';
+            if (state.explanationDepth === 'brief') return 'Keeping explanations concise — you\'re learning fast';
+            return 'Feedback recorded — maintaining current explanation style';
+        }
+
+        var acc = state.totalAnswered > 0 ? state.correct / state.totalAnswered : 0;
+        var last = state.recentAccuracy.length > 0 ? state.recentAccuracy[state.recentAccuracy.length - 1] : null;
+        var recentCorrect = state.recentAccuracy.filter(function(x) { return x; }).length;
+        var recentTotal = state.recentAccuracy.length;
+
+        if (state.totalAnswered === 0) return 'Answer a question to see the AI adapt in real-time';
+        if (last === true && recentTotal >= 2 && recentCorrect / recentTotal >= 0.8)
+            return 'Difficulty increased due to strong performance';
+        if (last === false && recentTotal >= 2 && recentCorrect / recentTotal <= 0.33)
+            return 'Providing simpler questions based on your answer';
+        if (last === true) return 'Correct! Monitoring pattern before next adjustment';
+        if (last === false && state.difficulty <= 2) return 'Providing simpler explanation based on your answer';
+        return 'Analyzing response pattern to optimize next question';
     }
 
     // ── UPDATE AGENT DECISIONS ──
@@ -855,10 +1011,22 @@
         state.assessmentCounter = 0;
         state.phase = 'playing';
         state.questionQueue = buildQueue();
+        state.helpfulYes = 0;
+        state.helpfulNo = 0;
+        state.explanationDepth = 'standard';
+        state.lastRLMessage = '';
 
         document.getElementById('demo-complete').style.display = 'none';
         document.getElementById('demo-adapt-banner').style.display = 'none';
         document.getElementById('demo-log').innerHTML = '<div class="demo-log-entry"><span class="demo-log-icon">&#9656;</span><span>Session restarted</span></div>';
+
+        // Reset RL panel
+        document.getElementById('rl-state').textContent = 'Accuracy: 0%';
+        document.getElementById('rl-action').textContent = 'Difficulty: Level 2';
+        document.getElementById('rl-reward').textContent = 'Waiting...';
+        document.getElementById('rl-reward').style.color = '';
+        document.getElementById('rl-message').textContent = 'Answer a question to see the AI adapt in real-time';
+        document.getElementById('lp-accuracy').textContent = '0%';
 
         // Reset progress
         document.getElementById('demo-score-circle').style.strokeDashoffset = 264;
@@ -915,6 +1083,7 @@
         selectOption: selectOption,
         nextQuestion: nextQuestion,
         restart: restart,
+        handleFeedback: handleFeedback,
     };
 
     // ── START ──
