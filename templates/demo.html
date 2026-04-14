@@ -7,7 +7,7 @@
     <script>
     (function(){var t=localStorage.getItem('epoch-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);})();
     </script>
-    <link rel="stylesheet" href="/static/css/style.css?v=11">
+    <link rel="stylesheet" href="/static/css/style.css?v=12">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -123,6 +123,50 @@
 
     <!-- CENTER: Quiz Area -->
     <main class="demo-center">
+
+        <!-- #1 INTELLIGENCE HEADER — always visible -->
+        <div class="demo-intel-header" id="demo-intel-header">
+            <div class="demo-intel-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </div>
+            <div class="demo-intel-text">
+                <div class="demo-intel-title">Adaptive AI is analyzing your performance in real-time</div>
+                <div class="demo-intel-sub">Difficulty adjusts automatically based on your answers</div>
+            </div>
+            <div class="demo-adaptive-badge" id="demo-adaptive-badge">
+                <span class="demo-adaptive-dot"></span>
+                Adaptive Mode: ON
+            </div>
+        </div>
+
+        <!-- Inline AI Adaptation Banner (shown after adaptation) -->
+        <div class="demo-adapt-banner" id="demo-adapt-banner" style="display:none;">
+            <span class="demo-adapt-icon">&#9889;</span>
+            <span class="demo-adapt-msg" id="demo-adapt-msg"></span>
+        </div>
+
+        <!-- #5 MINI LEARNING PROFILE -->
+        <div class="demo-learning-profile" id="demo-learning-profile">
+            <div class="demo-lp-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Your Learning Profile
+            </div>
+            <div class="demo-lp-rows">
+                <div class="demo-lp-row">
+                    <span class="demo-lp-label">Strength</span>
+                    <span class="demo-lp-value demo-lp-strength" id="lp-strength">Detecting...</span>
+                </div>
+                <div class="demo-lp-row">
+                    <span class="demo-lp-label">Weakness</span>
+                    <span class="demo-lp-value demo-lp-weakness" id="lp-weakness">Detecting...</span>
+                </div>
+                <div class="demo-lp-row">
+                    <span class="demo-lp-label">Level</span>
+                    <span class="demo-lp-value demo-lp-level" id="lp-level">Beginner</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Question Counter + Topic Badge -->
         <div class="demo-question-header">
             <div class="demo-topic-badge" id="demo-topic-badge">Quantitative Aptitude</div>
@@ -150,20 +194,30 @@
             </div>
         </div>
 
-        <!-- Feedback Area -->
+        <!-- #4 UPGRADED FEEDBACK — structured -->
         <div class="demo-feedback" id="demo-feedback" style="display:none;">
-            <div class="demo-feedback-icon" id="demo-feedback-icon"></div>
-            <div class="demo-feedback-text" id="demo-feedback-text"></div>
-            <div class="demo-feedback-explain" id="demo-feedback-explain"></div>
+            <div class="demo-feedback-top">
+                <div class="demo-feedback-icon" id="demo-feedback-icon"></div>
+                <div class="demo-feedback-text" id="demo-feedback-text"></div>
+            </div>
+            <div class="demo-feedback-sections" id="demo-feedback-sections">
+                <!-- Filled by JS: why wrong / correct concept / AI next action -->
+            </div>
             <button class="btn-primary btn-sm demo-next-btn" id="demo-next-btn" onclick="DemoApp.nextQuestion()">Next Question &rarr;</button>
         </div>
 
-        <!-- AI Thinking Animation (shown between questions) -->
+        <!-- #6 AI Thinking Animation — enhanced -->
         <div class="demo-ai-thinking" id="demo-ai-thinking" style="display:none;">
-            <div class="demo-thinking-dots">
-                <span></span><span></span><span></span>
+            <div class="demo-thinking-brain">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10" opacity="0.15"/>
+                    <path d="M12 2a10 10 0 0 1 10 10" class="demo-init-spinner"/>
+                </svg>
             </div>
-            <span>AI is adapting...</span>
+            <div class="demo-thinking-text">
+                <div class="demo-thinking-main" id="demo-thinking-main">Analyzing your response and adjusting difficulty...</div>
+                <div class="demo-thinking-sub" id="demo-thinking-sub">Recalculating optimal question parameters</div>
+            </div>
         </div>
 
         <!-- Demo Complete -->
@@ -418,6 +472,7 @@
         // Hide feedback, show question
         document.getElementById('demo-feedback').style.display = 'none';
         document.getElementById('demo-ai-thinking').style.display = 'none';
+        document.getElementById('demo-adapt-banner').style.display = 'none';
         document.getElementById('demo-question-card').style.display = 'block';
         document.getElementById('demo-complete').style.display = 'none';
 
@@ -486,25 +541,58 @@
         adaptDifficulty();
     }
 
-    // ── SHOW FEEDBACK ──
+    // ── SHOW FEEDBACK (structured) ──
     function showFeedback(isCorrect, q) {
         var feedback = document.getElementById('demo-feedback');
         var icon = document.getElementById('demo-feedback-icon');
         var text = document.getElementById('demo-feedback-text');
-        var explain = document.getElementById('demo-feedback-explain');
+        var sections = document.getElementById('demo-feedback-sections');
 
         icon.innerHTML = isCorrect
-            ? '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
-            : '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+            ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
-        text.textContent = isCorrect ? 'Correct!' : 'Not quite.';
+        text.textContent = isCorrect ? 'Correct!' : 'Incorrect';
         text.style.color = isCorrect ? '#22c55e' : '#ef4444';
-        explain.textContent = q.explain;
+
+        // Build structured feedback
+        var html = '';
+        if (!isCorrect) {
+            html += '<div class="demo-fb-row demo-fb-wrong">' +
+                '<span class="demo-fb-icon">&#10060;</span>' +
+                '<div><strong>Why it\'s wrong:</strong> Your selection was not the correct answer.</div>' +
+                '</div>';
+        }
+        html += '<div class="demo-fb-row demo-fb-concept">' +
+            '<span class="demo-fb-icon">&#9989;</span>' +
+            '<div><strong>Concept:</strong> ' + escapeHtml(q.explain) + '</div>' +
+            '</div>';
+
+        // AI next action
+        var nextAction = getAINextAction(isCorrect);
+        html += '<div class="demo-fb-row demo-fb-ai">' +
+            '<span class="demo-fb-icon">&#128200;</span>' +
+            '<div><strong>AI Next Action:</strong> ' + escapeHtml(nextAction) + '</div>' +
+            '</div>';
+
+        sections.innerHTML = html;
 
         feedback.style.display = 'block';
         feedback.classList.remove('slide-in');
         void feedback.offsetWidth;
         feedback.classList.add('slide-in');
+    }
+
+    // What the AI will do next (for feedback section)
+    function getAINextAction(wasCorrect) {
+        var recentCorrect = state.recentAccuracy.filter(function(x) { return x; }).length;
+        var recentTotal = state.recentAccuracy.length;
+        if (recentTotal < 2) return 'Collecting more data to calibrate difficulty.';
+        var acc = recentCorrect / recentTotal;
+        if (wasCorrect && acc >= 0.8) return 'Increasing difficulty to keep you in the challenge zone.';
+        if (!wasCorrect && acc <= 0.33) return 'Switching to an easier question to build your confidence.';
+        if (wasCorrect) return 'Maintaining current difficulty — you\'re in the flow zone.';
+        return 'Monitoring your next response before adjusting difficulty.';
     }
 
     // ── NEXT QUESTION ──
@@ -517,6 +605,18 @@
         state.phase = 'thinking';
         document.getElementById('demo-feedback').style.display = 'none';
         document.getElementById('demo-question-card').style.display = 'none';
+
+        // Pick a contextual thinking message
+        var thinkMsgs = [
+            ['Analyzing your response and adjusting difficulty...', 'Recalculating optimal question parameters'],
+            ['Evaluating mastery across topics...', 'Selecting next topic based on knowledge gaps'],
+            ['Processing answer pattern...', 'Adapting to your learning style'],
+            ['Running difficulty model...', 'Matching question to your zone of proximal development'],
+        ];
+        var pick = thinkMsgs[state.totalAnswered % thinkMsgs.length];
+        document.getElementById('demo-thinking-main').textContent = pick[0];
+        document.getElementById('demo-thinking-sub').textContent = pick[1];
+
         document.getElementById('demo-ai-thinking').style.display = 'flex';
 
         // Simulate AI thinking
@@ -524,7 +624,7 @@
             document.getElementById('demo-ai-thinking').style.display = 'none';
             state.phase = 'playing';
             showQuestion();
-        }, 800 + Math.random() * 400);
+        }, 900 + Math.random() * 500);
     }
 
     // ── ADAPT DIFFICULTY ──
@@ -532,6 +632,7 @@
         var oldDiff = state.difficulty;
         var recentCorrect = state.recentAccuracy.filter(function(x) { return x; }).length;
         var recentTotal = state.recentAccuracy.length;
+        var lastAnswer = state.recentAccuracy[state.recentAccuracy.length - 1];
 
         if (recentTotal >= 2) {
             var accuracy = recentCorrect / recentTotal;
@@ -546,16 +647,22 @@
             state.adaptationCount++;
             var direction = state.difficulty > oldDiff ? 'increased' : 'decreased';
             var diffEl = document.getElementById('agent-diff-decision');
-            diffEl.textContent = 'Difficulty ' + direction + ': Level ' + oldDiff + ' → ' + state.difficulty;
+            diffEl.textContent = 'Difficulty ' + direction + ': Level ' + oldDiff + ' \u2192 ' + state.difficulty;
             diffEl.classList.add('highlight');
             setTimeout(function() { diffEl.classList.remove('highlight'); }, 1500);
 
             document.getElementById('agent-diff-reason').textContent =
                 direction === 'increased'
-                    ? 'High accuracy detected — pushing to challenge zone'
-                    : 'Struggling detected — easing to build confidence';
+                    ? 'High accuracy detected \u2014 pushing to challenge zone'
+                    : 'Struggling detected \u2014 easing to build confidence';
 
             addLog('Difficulty ' + direction + ' to Level ' + state.difficulty);
+
+            // #2 — Show prominent inline adaptation banner
+            showAdaptBanner(direction, lastAnswer);
+        } else {
+            // No change — still hide banner
+            document.getElementById('demo-adapt-banner').style.display = 'none';
         }
 
         // Update difficulty meter
@@ -575,6 +682,70 @@
         } else {
             document.getElementById('assess-label').textContent = 'Next assessment: after ' + (3 - state.assessmentCounter) + ' questions';
         }
+
+        // #5 — Update learning profile
+        updateLearningProfile();
+    }
+
+    // ── #2 INLINE ADAPTATION BANNER ──
+    function showAdaptBanner(direction, wasCorrect) {
+        var banner = document.getElementById('demo-adapt-banner');
+        var msg = document.getElementById('demo-adapt-msg');
+        if (direction === 'increased') {
+            msg.textContent = 'Difficulty increased \u2014 You\'re answering correctly, pushing harder!';
+            banner.className = 'demo-adapt-banner demo-adapt-up';
+        } else {
+            msg.textContent = 'Difficulty decreased \u2014 Adjusting to build your confidence first.';
+            banner.className = 'demo-adapt-banner demo-adapt-down';
+        }
+        banner.style.display = 'flex';
+        banner.classList.remove('banner-enter');
+        void banner.offsetWidth;
+        banner.classList.add('banner-enter');
+    }
+
+    // ── #5 LEARNING PROFILE ──
+    function updateLearningProfile() {
+        // Strength: topic with highest mastery
+        var bestTopic = null, bestVal = -1;
+        Object.keys(state.topicMastery).forEach(function(t) {
+            if (state.topicMastery[t] > bestVal) { bestVal = state.topicMastery[t]; bestTopic = t; }
+        });
+        // Weakness: topic with lowest mastery (where at least 1 question answered)
+        var worstTopic = null, worstVal = 999;
+        Object.keys(state.topicMastery).forEach(function(t) {
+            if (state.topicMastery[t] < worstVal) { worstVal = state.topicMastery[t]; worstTopic = t; }
+        });
+
+        var strengthEl = document.getElementById('lp-strength');
+        var weaknessEl = document.getElementById('lp-weakness');
+        var levelEl = document.getElementById('lp-level');
+
+        if (bestTopic && state.totalAnswered >= 2) {
+            strengthEl.textContent = bestTopic;
+            strengthEl.style.color = DEMO_QUESTIONS[bestTopic] ? DEMO_QUESTIONS[bestTopic].color : 'var(--accent)';
+        } else {
+            strengthEl.textContent = 'Detecting...';
+            strengthEl.style.color = '';
+        }
+        if (worstTopic && state.totalAnswered >= 2 && worstTopic !== bestTopic) {
+            weaknessEl.textContent = worstTopic;
+            weaknessEl.style.color = DEMO_QUESTIONS[worstTopic] ? DEMO_QUESTIONS[worstTopic].color : '#ef4444';
+        } else if (state.totalAnswered >= 2) {
+            weaknessEl.textContent = 'No gaps yet';
+            weaknessEl.style.color = '#22c55e';
+        } else {
+            weaknessEl.textContent = 'Detecting...';
+            weaknessEl.style.color = '';
+        }
+
+        // Level based on difficulty + accuracy
+        var acc = state.totalAnswered > 0 ? state.correct / state.totalAnswered : 0;
+        var level = 'Beginner';
+        if (state.difficulty >= 4 && acc > 0.6) level = 'Advanced';
+        else if (state.difficulty >= 3 && acc > 0.5) level = 'Intermediate';
+        else if (state.difficulty >= 2 && acc > 0.4) level = 'Elementary';
+        levelEl.textContent = level;
     }
 
     // ── UPDATE AGENT DECISIONS ──
@@ -686,6 +857,7 @@
         state.questionQueue = buildQueue();
 
         document.getElementById('demo-complete').style.display = 'none';
+        document.getElementById('demo-adapt-banner').style.display = 'none';
         document.getElementById('demo-log').innerHTML = '<div class="demo-log-entry"><span class="demo-log-icon">&#9656;</span><span>Session restarted</span></div>';
 
         // Reset progress
@@ -697,6 +869,13 @@
         document.getElementById('demo-mastery-bars').innerHTML = '';
         document.getElementById('diff-fill').style.width = '40%';
         document.getElementById('assess-fill').style.width = '0%';
+
+        // Reset learning profile
+        document.getElementById('lp-strength').textContent = 'Detecting...';
+        document.getElementById('lp-strength').style.color = '';
+        document.getElementById('lp-weakness').textContent = 'Detecting...';
+        document.getElementById('lp-weakness').style.color = '';
+        document.getElementById('lp-level').textContent = 'Beginner';
 
         showQuestion();
     }
