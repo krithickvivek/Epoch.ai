@@ -5661,13 +5661,7 @@ textarea.input-field { resize: vertical; min-height: 80px; }
 
 /* Welcome section improved spacing */
 .dash-welcome {
-  margin-bottom: 4px;
-}
-.dash-welcome-sub {
-  margin-bottom: 6px;
-}
-.dash-optimize-line {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 /* Shake animation for validation errors */
