@@ -656,20 +656,22 @@ async def home_page(request: Request):
     strength_name = TOPIC_DISPLAY_NAMES.get(best_topic_id, "Not enough data") if best_topic_id is not None and mastery_dict.get(best_topic_id, 0) > 0 else "Not enough data"
     weakness_name = TOPIC_DISPLAY_NAMES.get(worst_topic_id, "No gaps detected") if worst_topic_id is not None else "No gaps detected"
 
-    # Determine level from average mastery
+    # Determine difficulty level from average mastery
     avg_m = total_mastery_pct / 100
     if avg_m >= 0.7:
-        current_level = "Advanced"
-    elif avg_m >= 0.4:
-        current_level = "Intermediate"
-    elif avg_m >= 0.15:
-        current_level = "Elementary"
+        current_level = "Hard"
+    elif avg_m >= 0.35:
+        current_level = "Medium"
     else:
-        current_level = "Beginner"
+        current_level = "Easy"
 
     # Quiz history stats
     quiz_hist = get_quiz_history(user["id"])
     quizzes_taken = len(quiz_hist)
+
+    # AI adaptations count: quiz-driven adjustments + topic mastery changes
+    topics_with_progress = sum(1 for v in mastery_dict.values() if v > 0)
+    ai_adaptations = quizzes_taken + topics_with_progress
 
     # Recommended next topic (lightweight — full recommendation via API)
     tg = _get_topic_graph_data()
@@ -698,6 +700,7 @@ async def home_page(request: Request):
         "total_mastery_pct": total_mastery_pct,
         "topics_mastered": topics_mastered,
         "quizzes_taken": quizzes_taken,
+        "ai_adaptations": ai_adaptations,
         "rec_topic_id": rec_topic_id,
         "rec_topic_name": rec_topic_name,
         "rec_reason": rec_reason,

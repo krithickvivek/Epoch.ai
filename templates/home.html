@@ -10,6 +10,10 @@
         <span class="dw-quote">Your learning path is adapting based on your performance</span>
     </div>
     <p class="dash-welcome-sub">AI continuously adjusts difficulty, topics, and recommendations in real-time</p>
+    <div class="dash-optimize-line">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Your learning path is continuously optimized based on your performance
+    </div>
 
     <!-- #2 AI INSIGHTS CARD (highest priority) -->
     <div class="ai-insights-card reveal">
@@ -26,7 +30,7 @@
                 AI Active
             </div>
         </div>
-        <div class="ai-insights-grid">
+        <div class="ai-insights-grid ai-insights-grid-5">
             <div class="ai-insights-item">
                 <span class="ai-insights-label">Strength</span>
                 <span class="ai-insights-value" style="color:#22c55e;">{{ strength_name }}</span>
@@ -38,6 +42,10 @@
             <div class="ai-insights-item">
                 <span class="ai-insights-label">Current Level</span>
                 <span class="ai-insights-value" style="color:var(--accent);">{{ current_level }}</span>
+            </div>
+            <div class="ai-insights-item">
+                <span class="ai-insights-label">AI Adaptations</span>
+                <span class="ai-insights-value" style="color:#f59e0b;">{{ ai_adaptations }}</span>
             </div>
             <div class="ai-insights-item">
                 <span class="ai-insights-label">Topics Mastered</span>
